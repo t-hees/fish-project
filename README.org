@@ -1,0 +1,28 @@
+* Running
+** Local variables
+Local variables are used for docker-compose and for the database configuration
+in spring.
+Defining them in a .env file in the root directory allows docker-compose to
+pick them up automatically.
+If not using docker, one must ensure that these variables are defined before
+starting the backend by configuring IDE run options or exporting them in
+the shell.
+
+*** Required environment variables with placeholder values:
+#+begin_src sh
+DB_HOST=localhost
+DB_PORT=3306
+DB_DBNAME=springdb
+DB_USERNAME=maria
+DB_PASSWORD=mariapass
+SPRING_PORT=8080
+#+end_src
+
+*** Additionally required variable for docker-compose with a placeholder value:
+#+begin_src sh
+DB_ROOT_PASSWORD=rootpass
+#+end_src
+
+* Credit
+
+All fish data was taken from https://fishbase.org

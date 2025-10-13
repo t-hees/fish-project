@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  backend:
+    build: ./backend
+    ports:
+      - ${BACKEND_PORT}:${BACKEND_PORT}
+    environment:
+      DB_HOST=${DB_HOST}
+      DB_PORT=${DB_PORT}
+      DB_DBNAME=${DB_DBNAME}
+      DB_USERNAME=${DB_USERNAME}
+      DB_PASSWORD=${DB_PASSWORD}
+  db:
+    image: docker.io/library/mariadb:latest
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DBNAME}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
