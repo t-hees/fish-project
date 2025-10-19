@@ -1,5 +1,6 @@
 package com.tadeo.fish_project.entity;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.persistence.Column;
@@ -35,6 +36,14 @@ public class Fish {
     public static enum Occurence {
         NATIVE,
         INTRODUCED,
+        ENDEMIC,
+    }
+
+    public static enum Abbundance {
+        COMMON,
+        FAIRLY_COMMON,
+        OCCASIONAL,
+        SCARCE,
     }
 
     @Id
@@ -45,20 +54,24 @@ public class Fish {
     @Column(unique = true)
     private String scientificName;
 
-    @NotEmpty
-    @ElementCollection
-    private Set<String> commonNames;
-
     @NotNull
+    @ElementCollection
     @Enumerated(EnumType.STRING)
-    private Environment environment;
+    private Set<Environment> environment = new HashSet<>();
 
     @NotNull
     @Enumerated(EnumType.STRING)
     private Occurence occurence;
 
-    private String abundance;
+    @NotNull
+    @ElementCollection
+    private Set<String> commonNames = new HashSet<>();
 
+    @Enumerated(EnumType.STRING)
+    private Abbundance abundance;
+
+    // This is currently a string because it contains mixed information
+    // about female/male/unsexed fish.
     private String maxLength;
 
 }
