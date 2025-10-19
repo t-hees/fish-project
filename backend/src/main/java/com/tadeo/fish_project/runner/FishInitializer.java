@@ -6,17 +6,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import com.tadeo.fish_project.service.FishService;
+
 @Component
 public class FishInitializer implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(FishInitializer.class);
 
     @Autowired
-    private FishInitializerService fishInitializerService;
+    private FishService fishService;
 
     @Override
     public void run(String... args) {
         try {
-            fishInitializerService.initializeFishFromCsv();
+            fishService.initializeFishFromCsv();
         } catch (Exception e) {
             logger.error("Failed to initialize empty fish table from csv", e);
         }

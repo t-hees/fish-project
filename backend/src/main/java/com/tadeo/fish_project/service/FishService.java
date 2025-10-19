@@ -1,4 +1,4 @@
-package com.tadeo.fish_project.runner;
+package com.tadeo.fish_project.service;
 
 import org.springframework.stereotype.Service;
 
@@ -14,14 +14,19 @@ import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.tadeo.fish_project.dto.FishNameMappingDto;
 import com.tadeo.fish_project.entity.Fish;
 import com.tadeo.fish_project.repository.FishRepository;
 
 @Service
-public class FishInitializerService {
+public class FishService {
 
     @Autowired
     private FishRepository fishRepository;
+
+    public List<FishNameMappingDto> searchByCommonName(String commonName) {
+        return fishRepository.searchByCommonName(commonName);
+    }
 
     @Transactional
     public void initializeFishFromCsv() throws Exception {
