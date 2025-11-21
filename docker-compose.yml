@@ -10,6 +10,7 @@ services:
       DB_DBNAME=${DB_DBNAME}
       DB_USERNAME=${DB_USERNAME}
       DB_PASSWORD=${DB_PASSWORD}
+      JWT_SECRET=${JWT_SECRET}
   db:
     image: docker.io/library/mariadb:latest
     ports:

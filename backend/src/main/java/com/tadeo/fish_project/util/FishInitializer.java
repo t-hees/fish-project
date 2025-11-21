@@ -1,4 +1,4 @@
-package com.tadeo.fish_project.runner;
+package com.tadeo.fish_project.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
