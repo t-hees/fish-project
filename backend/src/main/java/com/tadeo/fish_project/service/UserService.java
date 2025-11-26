@@ -62,7 +62,17 @@ public class UserService implements UserDetailsService {
         return Optional.empty();
     }
 
+    public User getUser() throws AuthenticationServiceException {
+        if (SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+            String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+            return userRepository.findByUsername(userName)
+                .orElseThrow(() -> new UsernameNotFoundException(userName));
+        }
+        else throw new AuthenticationServiceException("Not authenticated");
+    }
+
     public boolean userExists(String username) {
         return userRepository.findByUsername(username).isPresent();
     }
+
 }
