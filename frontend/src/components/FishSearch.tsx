@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDebounce } from "../util/useDebounce";
 import { Loading } from "./Loading";
+import { fetchApi } from "../util/fetchApi";
 
 type SimpleFish = {
   scientificName: string;
@@ -19,20 +20,9 @@ export default function FishSearch() {
   }, [debouncedQuery])
 
   const fetchFish = (query: string) => {
-    fetch(`http://localhost:8080/api/fish/search_by_common_name?name=${query}`, {
-      method: "GET",
-      credentials: "include"
-    })
-      .then(async response =>  {
-      const responseBody = await response.json();
-      if (!response.ok) {
-        throw new Error(responseBody.message);
-      }
-      return responseBody;
-    })
-      .then(responseBody => setFishList(responseBody))
-      .catch(err => setError(String(err)))
-      .finally(() => setLoading(false))
+    const relPath = `fish/search_by_common_name?name=${query}`;
+    fetchApi(relPath, "GET", async (response) => setFishList(await response.json()),
+      setError, setLoading)
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -60,7 +50,9 @@ export default function FishSearch() {
         : <div className="fish-search-content">
             <ul>
               {fishList.map((fish) =>
-                <li>{`${fish.commonName}: ${fish.scientificName}`}</li>
+                <li key={`${fish.commonName}-${fish.scientificName}`}>
+                  {`${fish.commonName}: ${fish.scientificName}`}
+                </li>
               )}
             </ul>
           </div>
