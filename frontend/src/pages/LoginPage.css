@@ -1,0 +1,26 @@
+.login-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #333;
+  padding: 60px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 800px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.login-label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.login-submit-button {
+  margin-top: 7px;
+}
+
+.login-notification-container {
+  color: #1c9b2f;
+}

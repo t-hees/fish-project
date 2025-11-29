@@ -1,19 +1,23 @@
 import { useState, type FormEventHandler } from "react";
-import { useNavigate } from "react-router-dom";
 import { fetchApi } from "../util/fetchApi";
 import { Loading } from "./Loading";
 
-export default function Login() {
-  const navigate = useNavigate();
+export default function Register({ notifySuccess }: any) {
+  const passwordNotMatchingError: string = "Error: Passwords don't match";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [repeatPassword, setRepeatPassword] = useState<string>("");
 
-  const requestLogin: FormEventHandler<HTMLFormElement> = (e) => {
+  const requestRegister: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
+    if (password != repeatPassword) {
+      setError(passwordNotMatchingError);
+      return;
+    }
     setLoading(true);
-    const relPath = "user/login";
+    const relPath = "user/register";
     const jsonBody = {
       username: username,
       password: password,
@@ -22,17 +26,15 @@ export default function Login() {
   }
 
   const handleResponse = async (response: Response) => {
-    const authToken = await response.text();
-    localStorage.setItem("auth-token", authToken);
-    localStorage.setItem("username", username);
-    console.log("Login successful: " + authToken);
-    navigate("/");
+    const message = await response.text();
+    console.log(message);
+    notifySuccess();
   }
 
   return (
     <div>
-      <h2>Login</h2>
-      <form onSubmit={requestLogin}>
+      <h2>Registrieren</h2>
+      <form onSubmit={requestRegister}>
         <div>
           <label className="login-label">Benutzername:</label>
           <input
@@ -48,6 +50,15 @@ export default function Login() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="login-label">Wiederhole Passwort:</label>
+          <input
+            type="password"
+            value={repeatPassword}
+            onChange={(e) => setRepeatPassword(e.target.value)}
             required
           />
         </div>
