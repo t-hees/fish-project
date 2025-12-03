@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
@@ -12,12 +11,12 @@ export default function Navbar() {
 
   return (
     <nav className="navigation">
-      <div className="nav-home-div">
-        <a href="/">HOME</a>
-      </div>
+      <button type="button" onClick={() => navigate("/")}>
+        HOME
+      </button>
       {localStorage.getItem("auth-token")
         ? <>
-            <button>
+            <button type="button" onClick={() => navigate("/user")}>
               {localStorage.getItem("username")}
             </button>
             <button type="button" onClick={userLogout}>

@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import com.tadeo.fish_project.dto.StringDto;
 import com.tadeo.fish_project.dto.UserDto;
+import com.tadeo.fish_project.dto.UserPasswordDto;
 import com.tadeo.fish_project.entity.User;
 import com.tadeo.fish_project.service.UserService;
 
@@ -40,6 +42,28 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body("Failed to authenticate user: " + authRequest.username() + "\n" + e);
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(@RequestBody UserPasswordDto userPasswordDto) {
+        try {
+            userService.changePassword(userPasswordDto);
+            return ResponseEntity.ok("Successfully changed password");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Failed to change password:\n" + e);
+        }
+    }
+
+    @PostMapping("/delete")
+    public ResponseEntity<String> delete(@RequestBody StringDto passwordDto) {
+        try {
+            userService.delete(passwordDto.string());
+            return ResponseEntity.ok("Successfully deleted user");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Failed to delete user:\n" + e);
         }
     }
 

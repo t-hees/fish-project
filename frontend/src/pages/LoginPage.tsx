@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Login from "../components/Login.tsx";
 import Register from "../components/Register.tsx";
-import "./LoginPage.css";
 
 export default function LoginPage() {
   const [noAccount, setNoAccount] = useState<boolean>(false);
@@ -13,8 +12,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-notification-container">
+    <div className="main-flex-container">
+      <div className="form-notification-container">
         {notification}
       </div>
       {noAccount

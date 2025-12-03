@@ -37,7 +37,7 @@ public class SecurityConfig {
             .formLogin(form -> form.disable())
             .authorizeHttpRequests(
                 authorizeRequest -> authorizeRequest
-                    .requestMatchers("/api/fish/**",
+                    .requestMatchers(
                         "/api/user/register", "/api/user/login").permitAll()
                     .anyRequest().authenticated()
             )

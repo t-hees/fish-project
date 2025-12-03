@@ -36,7 +36,7 @@ export default function Register({ notifySuccess }: any) {
       <h2>Registrieren</h2>
       <form onSubmit={requestRegister}>
         <div>
-          <label className="login-label">Benutzername:</label>
+          <label className="form-label">Benutzername:</label>
           <input
             type="text"
             value={username}
@@ -45,7 +45,7 @@ export default function Register({ notifySuccess }: any) {
           />
         </div>
         <div>
-          <label className="login-label">Passwort:</label>
+          <label className="form-label">Passwort:</label>
           <input
             type="password"
             value={password}
@@ -54,7 +54,7 @@ export default function Register({ notifySuccess }: any) {
           />
         </div>
         <div>
-          <label className="login-label">Wiederhole Passwort:</label>
+          <label className="form-label">Wiederhole Passwort:</label>
           <input
             type="password"
             value={repeatPassword}
@@ -64,7 +64,7 @@ export default function Register({ notifySuccess }: any) {
         </div>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {loading && <Loading />}
-        <button className="login-submit-button" type="submit">Senden</button>
+        <button className="form-submit-button" type="submit">Senden</button>
       </form>
     </div>
   );

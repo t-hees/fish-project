@@ -34,7 +34,7 @@ export default function Login() {
       <h2>Login</h2>
       <form onSubmit={requestLogin}>
         <div>
-          <label className="login-label">Benutzername:</label>
+          <label className="form-label">Benutzername:</label>
           <input
             type="text"
             value={username}
@@ -43,7 +43,7 @@ export default function Login() {
           />
         </div>
         <div>
-          <label className="login-label">Passwort:</label>
+          <label className="form-label">Passwort:</label>
           <input
             type="password"
             value={password}
@@ -53,7 +53,7 @@ export default function Login() {
         </div>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         {loading && <Loading />}
-        <button className="login-submit-button" type="submit">Senden</button>
+        <button className="form-submit-button" type="submit">Senden</button>
       </form>
     </div>
   );

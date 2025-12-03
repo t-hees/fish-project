@@ -76,6 +76,10 @@ public class User implements UserDetails, CredentialsContainer {
         return this.password;
     }
 
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     @Override
     public String getUsername() {
         return this.username;
