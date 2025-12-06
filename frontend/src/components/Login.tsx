@@ -2,10 +2,10 @@ import { useState, type FormEventHandler } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchApi } from "../util/fetchApi";
 import { Loading } from "./Loading";
+import type { NotifiableContentContext } from "./NotifiableContainer";
 
-export default function Login() {
+export const Login = ({ setError }: NotifiableContentContext) => {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -51,7 +51,6 @@ export default function Login() {
             required
           />
         </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
         {loading && <Loading />}
         <button className="form-submit-button" type="submit">Senden</button>
       </form>

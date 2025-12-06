@@ -80,3 +80,7 @@ button:focus-visible {
 .form-notification-container {
   color: #1c9b2f;
 }
+
+.form-error-container {
+  color: red;
+}

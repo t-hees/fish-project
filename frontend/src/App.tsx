@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import FishSearch from './components/FishSearch.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import Navbar from './components/Navbar.tsx'
-import User from './pages/User.tsx'
+import UserPage from './pages/UserPage.tsx'
 
 export default function App() {
 
@@ -16,7 +16,7 @@ export default function App() {
             && (
               <>
                 <Route path="/fish-search" element={<FishSearch />} />
-                <Route path="/user" element={<User />} />
+                <Route path="/user" element={<UserPage />} />
               </>
             )
           }

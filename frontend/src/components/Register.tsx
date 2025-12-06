@@ -1,10 +1,10 @@
 import { useState, type FormEventHandler } from "react";
 import { fetchApi } from "../util/fetchApi";
 import { Loading } from "./Loading";
+import type { NotifiableContentContext } from "./NotifiableContainer";
 
-export default function Register({ notifySuccess }: any) {
+export const Register = ({ setNotification, setError }: NotifiableContentContext) => {
   const passwordNotMatchingError: string = "Error: Passwords don't match";
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -28,7 +28,7 @@ export default function Register({ notifySuccess }: any) {
   const handleResponse = async (response: Response) => {
     const message = await response.text();
     console.log(message);
-    notifySuccess();
+    setNotification("Registrierung erfolgreich! Versuche Login");
   }
 
   return (
@@ -62,7 +62,6 @@ export default function Register({ notifySuccess }: any) {
             required
           />
         </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
         {loading && <Loading />}
         <button className="form-submit-button" type="submit">Senden</button>
       </form>
