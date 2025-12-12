@@ -3,6 +3,8 @@ import FishSearch from './components/FishSearch.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import Navbar from './components/Navbar.tsx'
 import UserPage from './pages/UserPage.tsx'
+import Home from './pages/Home.tsx'
+import CreateTrip from './pages/CreateTrip.tsx'
 
 export default function App() {
 
@@ -15,8 +17,10 @@ export default function App() {
           {localStorage.getItem("auth-token")
             && (
               <>
+                <Route path="/" element={<Home />} />
                 <Route path="/fish-search" element={<FishSearch />} />
                 <Route path="/user" element={<UserPage />} />
+                <Route path="/create-trip" element={<CreateTrip />} />
               </>
             )
           }
