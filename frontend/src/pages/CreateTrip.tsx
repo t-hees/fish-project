@@ -30,7 +30,7 @@ const weatherList = [
         "DAWN",
 ];
 
-type TripDto = {
+export type TripDto = {
   location: string,
   environment: typeof environmentList[number],
   time: number,
@@ -57,10 +57,26 @@ function Trip({ setError }: NotifiableContentContext) {
     setError(err);
   }
 
-  const tripFormElement = (labelText: string, dtoElement: keyof TripDto,
-    labelType: "text"|"number"|"datetime-local", selectionList?: readonly string[] | readonly number[]) => {
+  const tripFromInput = (labelText: string, dtoElement: keyof TripDto,
+    labelType: "text"|"number"|"datetime-local", isRequired?: boolean) => {
 
-    const singleSelection = selectionList && (
+    return(
+      <>
+        <label className="form-label">{labelText}: </label>
+        <input
+          type={labelType}
+          value={trip[dtoElement]}
+          onChange={(e) => setTripDto({...trip, [dtoElement]: e.target.value})}
+          required={isRequired ? true : false}
+        />
+      </>
+    )
+  }
+
+  const tripFormSelection = (labelText: string, dtoElement: keyof TripDto,
+    selectionList: readonly string[] | readonly number[], isMultiSelection?: boolean) => {
+
+    const singleSelection = (
       <select
         value={trip[dtoElement]}
         onChange={(e) => setTripDto({...trip, [dtoElement]: e.target.value})}
@@ -74,7 +90,7 @@ function Trip({ setError }: NotifiableContentContext) {
       </select>
     )
 
-    const multiSelection = selectionList && (
+    const multiSelection = (
       <select
         value={trip[dtoElement]}
         multiple
@@ -87,25 +103,14 @@ function Trip({ setError }: NotifiableContentContext) {
           </option>
         ))}
       </select>
-
     )
-
     return(
       <>
         <label className="form-label">{labelText}: </label>
-        {selectionList
-          ? (dtoElement === "weather" ? multiSelection : singleSelection)
-          : <input
-              type={labelType}
-              value={trip[dtoElement]}
-              onChange={(e) => setTripDto({...trip, [dtoElement]: e.target.value})}
-          />
-        }
+        {isMultiSelection ? multiSelection : singleSelection}
       </>
     )
   }
-
-
 
   return (
     <>
@@ -115,14 +120,14 @@ function Trip({ setError }: NotifiableContentContext) {
         e.preventDefault();
         fetchApi("trip/create", "POST", handleResponse, handleError, setLoading, trip)
       }}>
-        {tripFormElement("Ort", "location", "text")}
-        {tripFormElement("Gewässerart", "environment", "text", environmentList)}
-        {tripFormElement("Tag/Uhrzeit", "time", "datetime-local")}
-        {tripFormElement("Dauer(in h)", "hours", "number")}
-        {tripFormElement("Temperatur", "temperature", "number")}
-        {tripFormElement("Wasserpegel", "waterLevel", "number")}
-        {tripFormElement("Wetter", "weather", "text", weatherList)}
-        {tripFormElement("Notizen", "notes", "text")}
+        {tripFromInput("Tag/Uhrzeit", "time", "datetime-local", true)}
+        {tripFromInput("Ort", "location", "text", true)}
+        {tripFormSelection("Gewässerart", "environment", environmentList)}
+        {tripFromInput("Dauer(in h)", "hours", "number")}
+        {tripFromInput("Temperatur", "temperature", "number")}
+        {tripFromInput("Wasserpegel", "waterLevel", "number")}
+        {tripFormSelection("Wetter", "weather", weatherList, true)}
+        {tripFromInput("Notizen", "notes", "text")}
         <div>
           <button className="form-submit-button" type="submit">Angelausflug erstellen</button>
         </div>

@@ -9,7 +9,7 @@ import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.entity.User;
 
 public interface TripRepository extends CrudRepository<Trip, Long> {
-    Optional<Trip> findById(Long id);
+    Optional<Trip> findByIdAndUser(Long id, User user);
 
     List<Trip> findByUserOrderByTimeDesc(User user);
 }

@@ -1,0 +1,21 @@
+.trip-container {
+  background-color: #4d4d4d;
+  text-align: center;
+  box-sizing: border-box;
+}
+.trip-container:hover {
+  background-color: #5d5d5d;
+}
+.trip-container-body {
+  /* height: 0; */
+  overflow: hidden;
+  transition: height 0.2s;
+  padding: 0 10px;
+}
+.trip-container-body.expanded {
+  height: 300px;
+  overflow-y: auto;
+}
+.trip-container-body.collapsed {
+  height: 0;
+}

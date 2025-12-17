@@ -16,6 +16,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.ForeignKey;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -81,10 +82,12 @@ public class Trip {
     private User user;
 
     // TODO: Use entity for location
+    @NotNull
     private String location;
 
     private Environment environment;
 
+    @NotNull
     private LocalDateTime time;
 
     private Duration duration;

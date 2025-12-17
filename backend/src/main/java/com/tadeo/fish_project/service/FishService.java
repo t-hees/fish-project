@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +28,10 @@ public class FishService {
     public List<FishNameMappingDto> searchByCommonName(String commonName) {
         return fishRepository.searchByCommonName(commonName);
     }
+
+    public Optional<Fish> findById(Long id) {
+        return fishRepository.findById(id);
+    };
 
     @Transactional
     public void initializeFishFromCsv() throws Exception {

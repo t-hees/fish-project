@@ -1,6 +1,5 @@
 package com.tadeo.fish_project.service;
 
-import com.tadeo.fish_project.dto.StringDto;
 import com.tadeo.fish_project.dto.UserPasswordDto;
 import com.tadeo.fish_project.entity.User;
 import com.tadeo.fish_project.repository.UserRepository;

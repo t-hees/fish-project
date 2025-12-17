@@ -106,5 +106,9 @@ button:focus-visible {
 }
 
 .scroll-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   overflow-y: auto;
+  text-align: center;
 }

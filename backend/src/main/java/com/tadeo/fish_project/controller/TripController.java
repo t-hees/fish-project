@@ -14,6 +14,8 @@ import java.util.List;
 import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.service.TripService;
 import com.tadeo.fish_project.dto.AddCatchesDto;
+import com.tadeo.fish_project.dto.DeleteCatchesDto;
+import com.tadeo.fish_project.dto.IdDto;
 import com.tadeo.fish_project.dto.TripDto;
 import com.tadeo.fish_project.dto.TripReturnDto;
 
@@ -35,6 +37,17 @@ public class TripController {
         }
     }
 
+    @PostMapping("/delete")
+    public ResponseEntity<String> deleteTrip(@RequestBody IdDto idDto) {
+        try {
+            tripService.deleteTrip(idDto.id());
+            return ResponseEntity.ok("Successfully deleted Trip");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to delete trip:\n" + e);
+        }
+    }
+
     @PostMapping("/add-catches")
     public ResponseEntity<String> addCatches(@RequestBody AddCatchesDto addCatchesDto) {
         try {
@@ -44,6 +57,17 @@ public class TripController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Failed to add catches to trip:\n" + e);
+        }
+    }
+
+    @PostMapping("/delete-catches")
+    public ResponseEntity<String> deleteCatches(@RequestBody DeleteCatchesDto deleteCatchesDto) {
+        try {
+            tripService.deleteCatches(deleteCatchesDto.tripId(), deleteCatchesDto.simpleCatches(), deleteCatchesDto.specialCatches());
+            return ResponseEntity.ok("Successfully deleted catches");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to delete catches:\n" + e);
         }
     }
 
