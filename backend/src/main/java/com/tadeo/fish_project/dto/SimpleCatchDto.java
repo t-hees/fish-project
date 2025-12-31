@@ -1,3 +1,5 @@
 package com.tadeo.fish_project.dto;
 
-public record SimpleCatchDto(Long fishId, Integer amount){};
+import java.util.Optional;
+
+public record SimpleCatchDto(Long fishId, Integer amount, Optional<String> name){};

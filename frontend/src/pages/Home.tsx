@@ -4,7 +4,8 @@ import { fetchApi } from "../util/fetchApi";
 import { Loading } from "../components/Loading";
 import { useNavigate } from "react-router-dom";
 import "./Home.css";
-import type { TripDto } from "./CreateTrip";
+import type { TripDto } from "../components/api/Trip";
+import { SimpleCatchList, SpecialCatchList, type AllCatchesDto, type SimpleCatchDto, type SpecialCatchWithIdDto } from "../components/api/FishCatch";
 
 type Trip = TripDto & {
   id: number,
@@ -13,7 +14,7 @@ type Trip = TripDto & {
 export default function Home() {
   const OuterWrapper = ({ InnerComponent }: WrappedComponent) => {
     return (
-    <div className="full-page-container">
+    <div className="main-flex-container full-page">
       <div className="search-bar">
         <TripSearchBar />
       </div>
@@ -23,13 +24,11 @@ export default function Home() {
   }
 
   return (
-    <div className="full-page-container">
-      <NotifiableContainer MainContent={TripContainer} ContentWrapper={OuterWrapper} />
-    </div>
+    <NotifiableContainer MainContent={TripContainer} ContentWrapper={OuterWrapper} />
   );
 }
 
-function TripContainer ({ setError }: NotifiableContentContext) {
+function TripContainer ({ setError, setNotification }: NotifiableContentContext) {
   const navigate = useNavigate();
   const [tripList, setTripList] = useState<Trip[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -53,6 +52,11 @@ function TripContainer ({ setError }: NotifiableContentContext) {
     setExpandedTrips(newSet);
   }
 
+  const tripDelete = (tripId: number) => {
+    fetchApi("trip/delete", "POST", async (response) => setNotification(await response.text()),
+      setError, setLoading, {id: tripId})
+  }
+
   return (
     <div className="scroll-container">
       {loading && <Loading />}
@@ -63,9 +67,11 @@ function TripContainer ({ setError }: NotifiableContentContext) {
         <div className="trip-container" onClick={() => toggleTripContainer(trip.id)}>
           <h2>{trip.time.toString().split("T")[0]} - {trip.location}</h2>
           <div className={`trip-container-body ${expandedTrips.has(trip.id) ? "expanded" : "collapsed"}`}>
+            {/*
             <button type="button" onClick={() => 0}>
               Angelausflug bearbeiten
             </button>
+              */}
             <div>
               <p>Uhrzeit: {trip.time.toString().split("T")[1]}</p>
               <p>Gewässerart: {trip.environment}</p>
@@ -76,16 +82,46 @@ function TripContainer ({ setError }: NotifiableContentContext) {
               <p>Notizen:</p>
               {trip.notes}
             </div>
-            <div>
-              <button type="button" onClick={() => navigate(`/edit-fish?id=${trip.id}`)}>
-                Fishliste bearbeiten
-              </button>
-            </div>
+            <button type="button" onClick={() => navigate(`/edit-fish?id=${trip.id}`)}>
+              Fishliste bearbeiten
+            </button>
+            {expandedTrips.has(trip.id) && <TripCatches tripId={trip.id} setError={setError}/>}
+            <button type="button" onClick={() => tripDelete(trip.id)}>
+              Eintrag Löschen
+            </button>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function TripCatches({ tripId, setError }: {tripId: number, setError: React.Dispatch<string|null>}) {
+  const [simpleCatches, setSimpleCatches] = useState<SimpleCatchDto[]>([]);
+  const [specialCatches, setSpecialCatches] = useState<SpecialCatchWithIdDto[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const initializeCatches = (oldCatches: AllCatchesDto) => {
+    console.log(oldCatches);
+    setSimpleCatches(oldCatches.simpleCatches)
+    setSpecialCatches(oldCatches.specialCatches)
+  }
+  useEffect(() => {
+    fetchApi("trip/get-catches", "POST", async (response) => initializeCatches(await response.json()),
+      setError, setLoading, {id: tripId})
+  }, []);
+
+  if (loading) return <Loading />
+
+  return (
+    <div>
+      <hr />
+      <SimpleCatchList simpleCatches={simpleCatches} />
+      <hr />
+      <SpecialCatchList specialCatches={specialCatches} />
+      <hr />
+    </div>
+  )
 }
 
 function TripSearchBar() {

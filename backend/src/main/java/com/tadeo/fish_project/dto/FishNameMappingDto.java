@@ -1,3 +1,3 @@
 package com.tadeo.fish_project.dto;
 
-public record FishNameMappingDto(String scientificName, String commonName) {}
+public record FishNameMappingDto(Long id, String scientificName, String commonName) {}

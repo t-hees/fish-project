@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,11 +15,14 @@ import com.tadeo.fish_project.entity.SimpleCatch;
 import com.tadeo.fish_project.entity.SpecialCatch;
 import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.entity.User;
-import com.tadeo.fish_project.entity.Image.ImageType;
 import com.tadeo.fish_project.entity.Image;
 import com.tadeo.fish_project.dto.TripDto;
 import com.tadeo.fish_project.dto.TripReturnDto;
-import com.tadeo.fish_project.dto.AddCatchesDto;
+import com.tadeo.fish_project.dto.AllCatchesDto;
+import com.tadeo.fish_project.dto.EditCatchesDto;
+import com.tadeo.fish_project.dto.SimpleCatchDto;
+import com.tadeo.fish_project.dto.SpecialCatchDto;
+import com.tadeo.fish_project.dto.SpecialCatchWithIdDto;
 import com.tadeo.fish_project.repository.SimpleCatchRepository;
 import com.tadeo.fish_project.repository.SpecialCatchRepository;
 import com.tadeo.fish_project.repository.TripRepository;
@@ -63,31 +67,27 @@ public class TripService {
         tripRepository.delete(trip);
     }
 
-    public void addCatches(AddCatchesDto addCatchesDto) throws Exception {
-        Trip trip = tripRepository.findByIdAndUser(addCatchesDto.tripId(), userService.getUser())
-            .orElseThrow(() -> new RuntimeException("Trip not found with id: " + addCatchesDto.tripId()));
+    public void editCatches(EditCatchesDto editCatchesDto) throws Exception {
+        Trip trip = tripRepository.findByIdAndUser(editCatchesDto.tripId(), userService.getUser())
+            .orElseThrow(() -> new RuntimeException("Trip not found with id: " + editCatchesDto.tripId()));
 
-        List<SimpleCatch> simpleCatches = addCatchesDto.simpleCatches().stream().map((dto) -> {
+        Set<SimpleCatch> simpleCatches = editCatchesDto.simpleCatches().stream().map((dto) -> {
             Fish fish = fishSerice.findById(dto.fishId())
                 .orElseThrow(() -> new RuntimeException("Failed to find Fish with id: " + dto.fishId()));
             return SimpleCatch.builder()
                 .fish(fish)
                 .amount(dto.amount())
                 .build();
-        }).toList();
+        }).collect(Collectors.toSet());
 
-        List<SpecialCatch> specialCatches = addCatchesDto.specialCatches().stream().map((dto) -> {
+        List<SpecialCatch> newSpecialCatches = editCatchesDto.newSpecialCatches().stream().map((dto) -> {
             Fish fish = fishSerice.findById(dto.fishId())
                 .orElseThrow(() -> new RuntimeException("Failed to find Fish with id: " + dto.fishId()));
 
             Image image = null;
             if (dto.imageData() != null) {
-                ImageType imageType = Image.getImageType(dto.imageData());
-                if (imageType == ImageType.UNKNOWN) throw new RuntimeException("Unknown Image Type");
-                image = Image.builder()
-                    .data(dto.imageData())
-                    .type(imageType)
-                    .build();
+                image = new Image();
+                image.setBase64Image(dto.imageData());
             }
 
             return SpecialCatch.builder()
@@ -99,27 +99,41 @@ public class TripService {
                 .build();
         }).toList();
 
+        for (SpecialCatch specialCatch : specialCatchRepository.findAllById(editCatchesDto.removableSpecialCatchIds())) {
+            trip.getSpecialCatches().remove(specialCatch);
+        }
+        trip.getSimpleCatches().clear();
         trip.getSimpleCatches().addAll(simpleCatches);
-        trip.getSpecialCatches().addAll(specialCatches);
+        trip.getSpecialCatches().addAll(newSpecialCatches);
         // This works because of persistence cascade
         tripRepository.save(trip);
     }
 
-    public void deleteCatches(Long tripId, List<Long> simpleCatchIds, List<Long> specialCatchIds) throws Exception {
+    public AllCatchesDto getAllCatches(Long tripId) {
         Trip trip = tripRepository.findByIdAndUser(tripId, userService.getUser())
             .orElseThrow(() -> new RuntimeException("Failed to find Trip: " + tripId));
 
-        Set<SimpleCatch> simpleCatches = trip.getSimpleCatches();
-        for (SimpleCatch simpleCatch : simpleCatchRepository.findAllById(simpleCatchIds)) {
-            simpleCatches.remove(simpleCatch);
-        }
-        Set<SpecialCatch> specialCatches = trip.getSpecialCatches();
-        for (SpecialCatch specialCatch : specialCatchRepository.findAllById(specialCatchIds)) {
-            specialCatches.remove(specialCatch);
-        }
+        List<SimpleCatchDto> simpleCatches = trip.getSimpleCatches().stream()
+            .map(simpleCatch -> new SimpleCatchDto(
+                simpleCatch.getFish().getId(),
+                simpleCatch.getAmount(),
+                Optional.of(simpleCatch.getFish().getScientificName())
+            ))
+            .collect(Collectors.toList());
 
-        // This works because of persistence cascade
-        tripRepository.save(trip);
+        List<SpecialCatchWithIdDto> specialCatches = trip.getSpecialCatches().stream()
+            .map(specialCatch -> new SpecialCatchWithIdDto(
+                specialCatch.getId(),
+                specialCatch.getFish().getId(),
+                (specialCatch.getImage() != null) ? specialCatch.getImage().getBase64Image() : null,
+                specialCatch.getSize(),
+                specialCatch.getWeight(),
+                specialCatch.getNotes(),
+                specialCatch.getFish().getScientificName()
+            ))
+            .collect(Collectors.toList());
+
+        return new AllCatchesDto(simpleCatches, specialCatches);
     }
 
     public List<TripReturnDto> listAllTrips() {

@@ -1,30 +1,22 @@
 package com.tadeo.fish_project.entity;
 
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 
-import java.util.HashMap;
+import java.util.Base64;
 import java.util.HexFormat;
-import java.util.Map;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-@Getter
-@Setter
 @ToString
 @Table(name = "image")
 @Entity
@@ -40,11 +32,24 @@ public class Image {
     private Long id;
 
     @Lob
+    @NotNull
     private byte[] data;
 
-    @Enumerated(EnumType.STRING)
-    private ImageType type;
+    @NotNull
+    private String mimeType;
 
+    public void setBase64Image(String imageData) {
+        String[] splitImage = imageData.split(",");
+        if (splitImage.length != 2) throw new IllegalArgumentException("Image has no mime type!");
+        this.mimeType = splitImage[0];
+        this.data = Base64.getDecoder().decode(splitImage[1]);
+    }
+
+    public String getBase64Image() {
+        return mimeType + "," + Base64.getEncoder().encodeToString(this.data);
+    }
+
+    // Deprecated
     public static ImageType getImageType(byte[] imageData) {
         record ImageSignaturePair(ImageType type, byte[] signature){};
         ImageSignaturePair[] signatureMapping = {
@@ -63,4 +68,5 @@ public class Image {
         }
         return ImageType.UNKNOWN;
     }
+
 }

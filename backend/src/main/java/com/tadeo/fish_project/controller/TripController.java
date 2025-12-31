@@ -13,8 +13,8 @@ import java.util.List;
 
 import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.service.TripService;
-import com.tadeo.fish_project.dto.AddCatchesDto;
-import com.tadeo.fish_project.dto.DeleteCatchesDto;
+import com.tadeo.fish_project.dto.AllCatchesDto;
+import com.tadeo.fish_project.dto.EditCatchesDto;
 import com.tadeo.fish_project.dto.IdDto;
 import com.tadeo.fish_project.dto.TripDto;
 import com.tadeo.fish_project.dto.TripReturnDto;
@@ -48,36 +48,37 @@ public class TripController {
         }
     }
 
-    @PostMapping("/add-catches")
-    public ResponseEntity<String> addCatches(@RequestBody AddCatchesDto addCatchesDto) {
+    @PostMapping("/edit-catches")
+    public ResponseEntity<String> editCatches(@RequestBody EditCatchesDto editCatchesDto) {
         try {
-            tripService.addCatches(addCatchesDto);
+            tripService.editCatches(editCatchesDto);
             return ResponseEntity.ok()
-                    .body("Added catches to trip: " + addCatchesDto.tripId());
+                .body("Successfully edited catches of trip: " + editCatchesDto.tripId());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Failed to add catches to trip:\n" + e);
+                .body("Failed to edit catches of trip:\n" + e);
         }
     }
 
-    @PostMapping("/delete-catches")
-    public ResponseEntity<String> deleteCatches(@RequestBody DeleteCatchesDto deleteCatchesDto) {
+    @PostMapping("/get-catches")
+    public ResponseEntity<?> getAllCatches(@RequestBody IdDto tripIdDto) {
         try {
-            tripService.deleteCatches(deleteCatchesDto.tripId(), deleteCatchesDto.simpleCatches(), deleteCatchesDto.specialCatches());
-            return ResponseEntity.ok("Successfully deleted catches");
+            AllCatchesDto catches = tripService.getAllCatches(tripIdDto.id());
+            return ResponseEntity.ok().body(catches);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Failed to delete catches:\n" + e);
+                .body("Failed to get all catches:\n" + e);
         }
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<TripReturnDto>> listAllTrips() {
+    public ResponseEntity<?> listAllTrips() {
         try {
             List<TripReturnDto> trips = tripService.listAllTrips();
             return ResponseEntity.ok().body(trips);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Failed to get all catches:\n" + e);
         }
     }
 }

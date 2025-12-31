@@ -5,7 +5,7 @@ import Navbar from './components/Navbar.tsx'
 import UserPage from './pages/UserPage.tsx'
 import Home from './pages/Home.tsx'
 import CreateTrip from './pages/CreateTrip.tsx'
-import EditFish from './pages/EditFish.tsx'
+import EditCatch from './pages/EditCatch.tsx'
 
 export default function App() {
 
@@ -22,7 +22,7 @@ export default function App() {
                 <Route path="/fish-search" element={<FishSearch />} />
                 <Route path="/user" element={<UserPage />} />
                 <Route path="/create-trip" element={<CreateTrip />} />
-                <Route path="/edit-fish" element={<EditFish />} />
+                <Route path="/edit-fish" element={<EditCatch />} />
               </>
             )
           }
