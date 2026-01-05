@@ -1,28 +1,67 @@
-* Running
-** Local variables
-Local variables are used for docker-compose and for the database configuration
-in spring.
-Defining them in a .env file in the root directory allows docker-compose to
-pick them up automatically.
-If not using docker, one must ensure that these variables are defined before
-starting the backend by configuring IDE run options or exporting them in
-the shell.
+* Project Details
+** Project Description
+Fish-project is a WIP web-application for documenting fishing trips.
+Currently only a german interface and german fish are supported.
+** Currently implemented features
+- User account creation and JWT token based login
+- Creation of fishing trips with info
+- Creation of simple counted fish-catches or detailed catches with images and additional data
 
-*** Required environment variables with placeholder values:
+* Running
+** Docker quickstart
+To quickly start the project create .env file in root with the following content, change all placeholder values if desired
+(especially =JWT_SECRET= should be a random valid secret jwt key) and run =docker-compose up=:
 #+begin_src sh
 DB_HOST=localhost
 DB_PORT=3306
 DB_DBNAME=springdb
 DB_USERNAME=maria
 DB_PASSWORD=mariapass
-SPRING_PORT=8080
+DB_ROOT_PASSWORD=rootpass
+BACKEND_PORT=8080
+BACKEND_HOST=localhost
+FRONTEND_PORT=3030
 JWT_SECRET=pTj+DBXRkyetocsvSTE1n4r95Gq8rCnCeKvl2qDNBDc=
 #+end_src
 
-*** Additionally required variable for docker-compose with a placeholder value:
+** Manual without docker
+*** Database
+Create a mariadb database with a user and password and pass those as environment in the following section.
+Alternatively docker-compose can be used just for the database by creating a .env file with all DB_* variables
+from the previous section and running =docker-compose up db= in root.
+
+*** Backend
+**** Environment
+The following environment has to exist before running.
+All DB_* variables should correspond to a running mariadb database and JWT_SECRET should be a valid secret key.
 #+begin_src sh
-DB_ROOT_PASSWORD=rootpass
+DB_HOST=localhost
+DB_PORT=3306
+DB_DBNAME=springdb
+DB_USERNAME=maria
+DB_PASSWORD=mariapass
+BACKEND_PORT=8080
+JWT_SECRET=pTj+DBXRkyetocsvSTE1n4r95Gq8rCnCeKvl2qDNBDc=
 #+end_src
+**** Running
+Run the following in the backend root folder after configuring the environment
+#+begin_src sh
+mvn spring-boot:run
+#+end_src
+
+*** Frontend
+**** Environment
+The following environment has to exist before running =npm run dev= or just when building =npm run build=
+#+begin_src sh
+VITE_BACKEND_PORT=8080
+VITE_BACKEND_HOST=localhost
+#+end_src
+**** Running
+Run the following in the frontend root folder after configuring the environment
+#+begin_src sh
+npm run dev
+#+end_src
+
 
 * Credit
 
