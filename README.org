@@ -10,7 +10,8 @@ Currently only a german interface and german fish are supported.
 * Running
 ** Docker quickstart
 To quickly start the project create .env file in root with the following content, change all placeholder values if desired
-(especially =JWT_SECRET= should be a random valid secret jwt key) and run =docker-compose up=:
+(especially =JWT_SECRET= should be a random valid secret jwt key) and run =docker-compose up=.
+Afterwards connect to the frontend on a browser (=http://localhost:3030/= in this example)
 #+begin_src sh
 DB_HOST=localhost
 DB_PORT=3306
