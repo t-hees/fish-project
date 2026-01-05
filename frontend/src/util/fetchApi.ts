@@ -2,7 +2,7 @@ type FetchMethod = "GET" | "POST";
 
 type JsonBody = Record<string, unknown>;
 
-const apiPath = "http://localhost:8080/api/";
+const apiPath = `http://${import.meta.env.VITE_BACKEND_HOST}:${import.meta.env.VITE_BACKEND_PORT}/api/`;
 
 export async function fetchApi(relPath: string, method: FetchMethod,
   handleResponse: (arg0: Response) => void, handleError: (arg0: string | null) => void,

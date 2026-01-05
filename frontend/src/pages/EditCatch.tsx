@@ -21,7 +21,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
   const [oldSpecialCatches, setOldSpecialCatches] = useState<SpecialCatchWithIdDto[]>([]);
   const [removableSpecialCatchIds, setRemovableSpecialCatchIds] = useState<number[]>([]);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [_, setLoading] = useState<boolean>(false);
 
   const initializeOldCatches = (oldCatches: AllCatchesDto) => {
     console.log(oldCatches);
@@ -171,6 +171,6 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
   )
 }
 
-function FishList({ setError }: NotifiableContentContext) {
+function FishList({}: NotifiableContentContext) {
   return (<></>)
 }

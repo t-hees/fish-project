@@ -5,12 +5,23 @@ services:
     ports:
       - ${BACKEND_PORT}:${BACKEND_PORT}
     environment:
-      DB_HOST=${DB_HOST}
-      DB_PORT=${DB_PORT}
-      DB_DBNAME=${DB_DBNAME}
-      DB_USERNAME=${DB_USERNAME}
-      DB_PASSWORD=${DB_PASSWORD}
-      JWT_SECRET=${JWT_SECRET}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      DB_DBNAME: ${DB_DBNAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BACKEND_PORT: ${BACKEND_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - db
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_PORT: ${BACKEND_PORT}
+        VITE_BACKEND_HOST: ${BACKEND_HOST}
+    ports:
+      - ${FRONTEND_PORT}:80
   db:
     image: docker.io/library/mariadb:latest
     ports:
@@ -20,3 +31,7 @@ services:
       MYSQL_DATABASE: ${DB_DBNAME}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      fish-db:/var/lib/mariadb
+volumes:
+  fish-db:
