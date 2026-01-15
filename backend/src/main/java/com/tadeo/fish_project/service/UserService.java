@@ -47,7 +47,7 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user);
     }
 
-    public String authenticateAndGetToken(String username, String password) throws Exception {
+    public String login(String username, String password) throws Exception {
         UserDetails userDetails = loadUserByUsername(username);
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
             throw new AuthenticationServiceException("Password doesn't match");
@@ -77,10 +77,10 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public Optional<UserDetails> getUserDetails() {
+    public Optional<String> getUsername() {
         if (SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
             String userName = SecurityContextHolder.getContext().getAuthentication().getName();
-            return Optional.of(loadUserByUsername(userName));
+            return Optional.of(userName);
         }
         return Optional.empty();
     }

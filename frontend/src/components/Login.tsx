@@ -1,14 +1,16 @@
-import { useState, type FormEventHandler } from "react";
+import { useContext, useState, type FormEventHandler } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchApi } from "../util/fetchApi";
 import { Loading } from "./Loading";
 import type { NotifiableContentContext } from "./NotifiableContainer";
+import { AuthContext } from "../util/AuthContext";
 
 export const Login = ({ setError }: NotifiableContentContext) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const authContext = useContext(AuthContext);
 
   const requestLogin: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
@@ -22,10 +24,8 @@ export const Login = ({ setError }: NotifiableContentContext) => {
   }
 
   const handleResponse = async (response: Response) => {
-    const authToken = await response.text();
-    localStorage.setItem("auth-token", authToken);
-    localStorage.setItem("username", username);
-    console.log("Login successful: " + authToken);
+    const username = await response.text();
+    authContext.setName(username);
     navigate("/");
   }
 

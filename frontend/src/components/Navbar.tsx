@@ -1,12 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import "./Navbar.css";
+import { fetchApi } from "../util/fetchApi";
+import { useContext } from "react";
+import { AuthContext } from "../util/AuthContext";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const {name, authClear} = useContext(AuthContext);
 
   const userLogout = () => {
-    localStorage.clear();
-    navigate("/login");
+    fetchApi("user/logout", "POST",
+      () => {console.log("successfully logged out user"); authClear(); navigate("/login")},
+      (error) => console.error(error),
+      () => console.log("requesting user logout"));
   }
 
   return (
@@ -14,10 +20,10 @@ export default function Navbar() {
       <button type="button" onClick={() => navigate("/")}>
         HOME
       </button>
-      {localStorage.getItem("auth-token")
+      {name
         ? <>
             <button type="button" onClick={() => navigate("/user")}>
-              {localStorage.getItem("username")}
+              {name}
             </button>
             <button type="button" onClick={userLogout}>
               LOGOUT

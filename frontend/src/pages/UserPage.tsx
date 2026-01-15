@@ -57,13 +57,12 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
     const message = await response.text();
     setLoading(false);
     console.log(message);
-    localStorage.clear();
     navigate("/login");
   }
 
   return (
     <>
-      <h2>{localStorage.getItem("username")}</h2>
+      <h2>Nutzerdaten Ändern</h2>
       {loading
         ? <Loading />
         : (

@@ -9,14 +9,7 @@ export async function fetchApi(relPath: string, method: FetchMethod,
   handleLoading: (arg0: boolean) => void, body?: JsonBody): Promise<void> {
 
   const jsonBody = body ? JSON.stringify(body) : undefined;
-  const authToken = localStorage.getItem("auth-token");
-  const requestHeaders = body
-    ? {
-      "Content-Type": "application/json",
-      ...(authToken && { "Authorization": `Bearer ${authToken}` }),
-  }
-    : (authToken ? { "Authorization": `Bearer ${authToken}` } : undefined);
-
+  const requestHeaders = body ? {"Content-Type": "application/json"} : undefined;
   return fetch(apiPath + relPath, {
     method: method,
     credentials: "include",

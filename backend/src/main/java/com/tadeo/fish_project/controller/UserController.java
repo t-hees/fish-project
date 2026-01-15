@@ -1,9 +1,12 @@
 package com.tadeo.fish_project.controller;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -34,15 +37,40 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> authenticateAndGetToken(@RequestBody UserDto authRequest) {
+    public ResponseEntity<String> login(@RequestBody UserDto authRequest) {
         try {
-            String token = userService.authenticateAndGetToken(authRequest.username(), authRequest.password());
+            String token = userService.login(authRequest.username(), authRequest.password());
+
+            ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", token)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Strict")
+                .maxAge(Duration.ofHours(24))
+                .build();
+
             return ResponseEntity.ok()
-                .body(token);
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(authRequest.username());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body("Failed to authenticate user: " + authRequest.username() + "\n" + e);
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout() {
+        ResponseCookie expiredCookie = ResponseCookie.from("AUTH_TOKEN", "")
+            .path("/")
+            .httpOnly(true)
+            .secure(true)
+            .maxAge(0)
+            .sameSite("Strict")
+            .build();
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
+            .body("Logged out");
     }
 
     @PostMapping("/change-password")
@@ -67,9 +95,9 @@ public class UserController {
         }
     }
 
-    @GetMapping("/dashboard")
-    public ResponseEntity<UserDetails> getUserDetails() {
-        Optional<UserDetails> userDetails = userService.getUserDetails();
+    @GetMapping("/name")
+    public ResponseEntity<String> getUsername() {
+        Optional<String> userDetails = userService.getUsername();
         if (userDetails.isPresent()) {
             return ResponseEntity.ok(userDetails.get());
         }

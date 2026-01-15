@@ -19,7 +19,7 @@ function Trip({ setError }: NotifiableContentContext) {
   const handleResponse = async (response: Response) => {
     const message = await response.text();
     console.log(message);
-    navigate("/home");
+    navigate("/");
   }
 
   const handleError = (err: string|null) => {

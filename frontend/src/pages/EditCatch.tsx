@@ -59,7 +59,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
       newSpecialCatches: specialCatches,
       removableSpecialCatchIds: removableSpecialCatchIds,
     };
-    fetchApi("trip/edit-catches", "POST", async (response) => console.log(await response.text()),
+    fetchApi("trip/edit-catches", "POST", async (response) => setNotification(await response.text()),
       setError, setLoading, data)
   }
 
