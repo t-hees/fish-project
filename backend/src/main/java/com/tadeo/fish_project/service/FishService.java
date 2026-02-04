@@ -1,10 +1,6 @@
 package com.tadeo.fish_project.service;
 
-import org.springframework.stereotype.Service;
-
-import jakarta.transaction.Transactional;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -14,11 +10,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+import org.springframework.util.function.ThrowingSupplier;
 
 import com.tadeo.fish_project.dto.FishNameMappingDto;
 import com.tadeo.fish_project.entity.Fish;
 import com.tadeo.fish_project.repository.FishRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class FishService {
@@ -35,9 +34,9 @@ public class FishService {
     };
 
     @Transactional
-    public void initializeFishFromCsv() throws Exception {
+    public void initializeFromReader(ThrowingSupplier<BufferedReader> readerSupplier) throws Exception {
         if (fishRepository.count() == 0) {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader((new ClassPathResource("output.csv")).getInputStream()))) {
+            try (BufferedReader reader = readerSupplier.getWithException()) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     try {

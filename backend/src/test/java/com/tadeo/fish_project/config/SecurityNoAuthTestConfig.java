@@ -4,8 +4,8 @@ import com.tadeo.fish_project.service.UserService;
 import com.tadeo.fish_project.util.JwtAuthFilter;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,10 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-@Configuration
+@TestConfiguration
 @EnableWebSecurity
-@Profile("!no_auth")
-public class SecurityConfig {
+@Profile("no_auth")
+public class SecurityNoAuthTestConfig {
     @Autowired
     private UserService userService;
     @Autowired
@@ -39,9 +39,7 @@ public class SecurityConfig {
             .formLogin(form -> form.disable())
             .authorizeHttpRequests(
                 authorizeRequest -> authorizeRequest
-                    .requestMatchers(
-                        "/api/user/register", "/api/user/login").permitAll()
-                    .anyRequest().authenticated()
+                    .anyRequest().permitAll()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

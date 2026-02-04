@@ -25,7 +25,7 @@ services:
   db:
     image: docker.io/library/mariadb:latest
     ports:
-      - ${DB_PORT}:${DB_PORT}
+      - ${DB_PORT}:3306
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DBNAME}
