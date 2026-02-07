@@ -15,15 +15,15 @@ import com.tadeo.fish_project.entity.SimpleCatch;
 import com.tadeo.fish_project.entity.SpecialCatch;
 import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.entity.User;
+import com.tadeo.fish_project.exception.FishNotFoundException;
+import com.tadeo.fish_project.exception.TripNotFoundException;
 import com.tadeo.fish_project.entity.Image;
 import com.tadeo.fish_project.dto.TripDto;
 import com.tadeo.fish_project.dto.TripReturnDto;
 import com.tadeo.fish_project.dto.AllCatchesDto;
 import com.tadeo.fish_project.dto.EditCatchesDto;
 import com.tadeo.fish_project.dto.SimpleCatchDto;
-import com.tadeo.fish_project.dto.SpecialCatchDto;
 import com.tadeo.fish_project.dto.SpecialCatchWithIdDto;
-import com.tadeo.fish_project.repository.SimpleCatchRepository;
 import com.tadeo.fish_project.repository.SpecialCatchRepository;
 import com.tadeo.fish_project.repository.TripRepository;
 
@@ -34,8 +34,6 @@ public class TripService {
     private TripRepository tripRepository;
     @Autowired
     private SpecialCatchRepository specialCatchRepository;
-    @Autowired
-    private SimpleCatchRepository simpleCatchRepository;
     @Autowired
     private UserService userService;
     @Autowired
@@ -61,19 +59,19 @@ public class TripService {
         return trip;
     }
 
-    public void deleteTrip(Long id) throws Exception {
+    public void deleteTrip(Long id) {
         Trip trip = tripRepository.findByIdAndUser(id, userService.getUser())
-            .orElseThrow(() -> new RuntimeException("Failed to find Trip: " + id));
+            .orElseThrow(() -> new FishNotFoundException(id));
         tripRepository.delete(trip);
     }
 
-    public void editCatches(EditCatchesDto editCatchesDto) throws Exception {
+    public void editCatches(EditCatchesDto editCatchesDto) {
         Trip trip = tripRepository.findByIdAndUser(editCatchesDto.tripId(), userService.getUser())
-            .orElseThrow(() -> new RuntimeException("Trip not found with id: " + editCatchesDto.tripId()));
+            .orElseThrow(() -> new TripNotFoundException(editCatchesDto.tripId()));
 
         Set<SimpleCatch> simpleCatches = editCatchesDto.simpleCatches().stream().map((dto) -> {
             Fish fish = fishSerice.findById(dto.fishId())
-                .orElseThrow(() -> new RuntimeException("Failed to find Fish with id: " + dto.fishId()));
+                .orElseThrow(() -> new FishNotFoundException(dto.fishId()));
             return SimpleCatch.builder()
                 .fish(fish)
                 .amount(dto.amount())
@@ -82,7 +80,7 @@ public class TripService {
 
         List<SpecialCatch> newSpecialCatches = editCatchesDto.newSpecialCatches().stream().map((dto) -> {
             Fish fish = fishSerice.findById(dto.fishId())
-                .orElseThrow(() -> new RuntimeException("Failed to find Fish with id: " + dto.fishId()));
+                .orElseThrow(() -> new FishNotFoundException(dto.fishId()));
 
             Image image = null;
             if (dto.imageData() != null) {
@@ -111,7 +109,7 @@ public class TripService {
 
     public AllCatchesDto getAllCatches(Long tripId) {
         Trip trip = tripRepository.findByIdAndUser(tripId, userService.getUser())
-            .orElseThrow(() -> new RuntimeException("Failed to find Trip: " + tripId));
+            .orElseThrow(() -> new TripNotFoundException(tripId));
 
         List<SimpleCatchDto> simpleCatches = trip.getSimpleCatches().stream()
             .map(simpleCatch -> new SimpleCatchDto(

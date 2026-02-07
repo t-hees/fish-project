@@ -1,8 +1,8 @@
 package com.tadeo.fish_project;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -69,11 +69,11 @@ class FishIntTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.hasBody(), "Response has no body");
         assertEquals(
-            "Search result doesn't match expected values in correct order",
             List.of("Aalmutter", "Meeraal", "Congeraal", "Kleiner Sandaal", "Gemeiner Meeraal"),
             response.getBody().stream().map((fish) -> {
                 return fish.commonName();
-            }).collect(Collectors.toList())
+            }).collect(Collectors.toList()),
+            "Search result doesn't match expected values in correct order"
         );
     }
 

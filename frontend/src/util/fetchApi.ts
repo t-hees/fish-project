@@ -2,6 +2,13 @@ type FetchMethod = "GET" | "POST";
 
 type JsonBody = Record<string, unknown>;
 
+type ApiError = {
+  code: string,
+  message: string,
+  timestamp: string,
+  uri: string
+}
+
 const apiPath = `http://${import.meta.env.VITE_BACKEND_HOST}:${import.meta.env.VITE_BACKEND_PORT}/api/`;
 
 export async function fetchApi(relPath: string, method: FetchMethod,
@@ -18,11 +25,13 @@ export async function fetchApi(relPath: string, method: FetchMethod,
   })
     .then(async response =>  {
     if (!response.ok) {
-      throw new Error(await response.text());
+      const responseJson: ApiError = await response.json();
+      console.error(responseJson);
+      throw new Error(responseJson.code + ": " + responseJson.message);
     }
     return response;
   })
     .then(response => handleResponse(response))
-    .catch(err => handleError(String(err)))
+    .catch(err => handleError(err.message))
     .finally(() => handleLoading(false));
 }

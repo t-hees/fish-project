@@ -1,7 +1,7 @@
 package com.tadeo.fish_project;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +63,7 @@ class UserIntTest {
     void initUser() {
         userRepository.deleteAll();
         ResponseEntity<String> response = performRegister(userDto);
-        assertEquals(response.getBody(), HttpStatus.CREATED, response.getStatusCode());
+        assertEquals(HttpStatus.CREATED, response.getStatusCode(), response.getBody());
     }
 
     @Test
@@ -80,11 +80,11 @@ class UserIntTest {
         // fail login with false password
         UserDto falseLogin = new UserDto(userDto.username(), userDto.password() + "f");
         ResponseEntity<String> response = performLogin(falseLogin);
-        assertEquals(response.getBody(), HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), response.getBody());
 
         // succesfull login
         response = performLogin(userDto);
-        assertEquals(response.getBody(), HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
         assertTrue(response.hasBody(), "Login didn't return anything");
     }
 
@@ -111,13 +111,13 @@ class UserIntTest {
             HttpMethod.POST,
             new HttpEntity<>(userPasswordDto, httpHeaders),
             String.class);
-        assertEquals(response.getBody(), HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), response.getBody());
         userPasswordDto = new UserPasswordDto(userDto.password(), newPass);
         response = restTemplate.exchange("/api/user/change-password",
             HttpMethod.POST,
             new HttpEntity<>(userPasswordDto, httpHeaders),
             String.class);
-        assertEquals(response.getBody(), HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
 
         // Logout
         response = restTemplate.exchange("/api/user/logout",
@@ -126,24 +126,30 @@ class UserIntTest {
             String.class);
         if (HttpStatus.OK.equals(response.getStatusCode())) {
         }
-        assertEquals("Failed to logout", HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Failed to logout");
         httpHeaders.clear();
         httpHeaders.add(HttpHeaders.COOKIE, response.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
         response = restTemplate.exchange("/api/user/name",
             HttpMethod.GET,
             new HttpEntity<>(null, httpHeaders),
             String.class);
-        assertEquals("Non-authorized access should be forbidden after logout",
+        assertEquals(
             HttpStatus.FORBIDDEN,
-            response.getStatusCode());
+            response.getStatusCode(),
+            "Non-authorized access should be forbidden after logout"
+        );
 
         // Login again
         response = performLogin(userDto);
-        assertEquals("Login with old password is expected to fail" + response.getBody(),
-            HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(
+            HttpStatus.BAD_REQUEST, response.getStatusCode(),
+            "Login with old password is expected to fail" + response.getBody()
+        );
         response = performLogin(new UserDto(userDto.username(), newPass));
-        assertEquals("Login with new password failed" + response.getBody(),
-            HttpStatus.OK, response.getStatusCode());
+        assertEquals(
+            HttpStatus.OK, response.getStatusCode(),
+            "Login with new password failed" + response.getBody()
+        );
     }
 
     @Test
@@ -154,11 +160,11 @@ class UserIntTest {
             HttpMethod.POST,
             new HttpEntity<>(new StringDto(userDto.password()+"fail"), httpHeaders),
             String.class);
-        assertEquals("Expected to fail user deletion with false password", HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode(), "Expected to fail user deletion with false password");
         response = restTemplate.exchange("/api/user/delete",
             HttpMethod.POST,
             new HttpEntity<>(new StringDto(userDto.password()), httpHeaders),
             String.class);
-        assertEquals("Failed user deletion" + response.getBody(), HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Failed user deletion" + response.getBody());
     }
 }

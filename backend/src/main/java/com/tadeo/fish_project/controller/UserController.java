@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import com.tadeo.fish_project.dto.StringDto;
 import com.tadeo.fish_project.dto.UserDto;
 import com.tadeo.fish_project.dto.UserPasswordDto;
-import com.tadeo.fish_project.entity.User;
 import com.tadeo.fish_project.service.UserService;
 
 @RestController
@@ -25,36 +24,26 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<String> createUser(@RequestBody UserDto data) {
-        try {
-            User user = userService.createUser(data.username(), data.password());
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body("Created user: " + data.username());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Failed to create user: " + data.username() + "\n" + e);
-        }
+        userService.createUser(data.username(), data.password());
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body("Created user: " + data.username());
     }
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody UserDto authRequest) {
-        try {
-            String token = userService.login(authRequest.username(), authRequest.password());
+        String token = userService.login(authRequest.username(), authRequest.password());
 
-            ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", token)
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .sameSite("Strict")
-                .maxAge(Duration.ofHours(24))
-                .build();
+        ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", token)
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .sameSite("Strict")
+            .maxAge(Duration.ofHours(24))
+            .build();
 
-            return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(authRequest.username());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Failed to authenticate user: " + authRequest.username() + "\n" + e);
-        }
+        return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, cookie.toString())
+            .body(authRequest.username());
     }
 
     @PostMapping("/logout")
@@ -74,24 +63,14 @@ public class UserController {
 
     @PostMapping("/change-password")
     public ResponseEntity<String> changePassword(@RequestBody UserPasswordDto userPasswordDto) {
-        try {
-            userService.changePassword(userPasswordDto);
-            return ResponseEntity.ok("Successfully changed password");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Failed to change password:\n" + e);
-        }
+        userService.changePassword(userPasswordDto);
+        return ResponseEntity.ok("Successfully changed password");
     }
 
     @PostMapping("/delete")
     public ResponseEntity<String> delete(@RequestBody StringDto passwordDto) {
-        try {
-            userService.delete(passwordDto.string());
-            return ResponseEntity.ok("Successfully deleted user");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body("Failed to delete user:\n" + e);
-        }
+        userService.delete(passwordDto.string());
+        return ResponseEntity.ok("Successfully deleted user");
     }
 
     @GetMapping("/name")
