@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,8 @@ import com.tadeo.fish_project.config.SecurityNoAuthTestConfig;
 import com.tadeo.fish_project.dto.FishNameMappingDto;
 import com.tadeo.fish_project.repository.FishRepository;
 import com.tadeo.fish_project.service.FishService;
+import com.tadeo.fish_project.util.TestFishUtils;
+import com.tadeo.fish_project.util.TestUtils;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @Import(SecurityNoAuthTestConfig.class)
@@ -39,38 +42,26 @@ class FishIntTest {
     FishService fishService;
 
     @Autowired
-    FishRepository fishRepository;
+    TestUtils testUtils;
 
     @Autowired
-    TestRestTemplate restTemplate;
+    TestFishUtils testFishUtils;
 
     @BeforeEach
     void initializeTestFish() {
-        fishRepository.deleteAll();
-        String fishData = """
-"Trisopterus esmarkii","['marine']","native","['Stintdorsch', 'Sparling']","scarce","35.00 cm TL male/unsexed"
-"Conger conger","['brakish', 'marine']","native","['Meeraal', 'Conger', 'Congeraal', 'Gemeiner Meeraal']","scarce","300 cm TL male/unsexed"
-"Zoarces viviparus","['brakish', 'marine']","native","['Aalmutter']","common","52.00 cm TL male/unsexed"
-"Ammodytes marinus","['brakish', 'marine']","native","['Kleiner Sandaal', 'Tobiasfisch', 'Tobis']","scarce","25.00 cm TL male/unsexed"
-        """;
-
-        ThrowingSupplier<BufferedReader> readerSupplier = () ->
-            new BufferedReader(new StringReader(fishData));
-        assertDoesNotThrow(() -> fishService.initializeFromReader(readerSupplier));
+        testFishUtils.initializeTestFish();
     }
 
     @Test
     void testSearchByCommonName() {
-        ParameterizedTypeReference<List<FishNameMappingDto>> resultType = new ParameterizedTypeReference<List<FishNameMappingDto>>() {};
-        ResponseEntity<List<FishNameMappingDto>> response = restTemplate.exchange("/api/fish/search_by_common_name?name=aal",
-            HttpMethod.GET,
-            null,
-            resultType);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.hasBody(), "Response has no body");
+        List<FishNameMappingDto> fishList = testUtils.exchangeRest(
+            "/api/fish/search_by_common_name?name=aal", HttpMethod.GET,
+            new ParameterizedTypeReference<List<FishNameMappingDto>>() {},
+            HttpStatus.OK, "Failed to search fish by name"
+        );
         assertEquals(
             List.of("Aalmutter", "Meeraal", "Congeraal", "Kleiner Sandaal", "Gemeiner Meeraal"),
-            response.getBody().stream().map((fish) -> {
+            fishList.stream().map((fish) -> {
                 return fish.commonName();
             }).collect(Collectors.toList()),
             "Search result doesn't match expected values in correct order"

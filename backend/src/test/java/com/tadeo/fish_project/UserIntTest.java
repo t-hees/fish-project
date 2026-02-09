@@ -124,8 +124,6 @@ class UserIntTest {
             HttpMethod.POST,
             new HttpEntity<>(null, httpHeaders),
             String.class);
-        if (HttpStatus.OK.equals(response.getStatusCode())) {
-        }
         assertEquals(HttpStatus.OK, response.getStatusCode(), "Failed to logout");
         httpHeaders.clear();
         httpHeaders.add(HttpHeaders.COOKIE, response.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
