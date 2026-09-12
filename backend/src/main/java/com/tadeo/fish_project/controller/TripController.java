@@ -7,9 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.service.TripService;
@@ -17,11 +16,13 @@ import com.tadeo.fish_project.dto.AllCatchesDto;
 import com.tadeo.fish_project.dto.EditCatchesDto;
 import com.tadeo.fish_project.dto.IdDto;
 import com.tadeo.fish_project.dto.TripDto;
-import com.tadeo.fish_project.dto.TripReturnDto;
+import com.tadeo.fish_project.dto.TripPageDto;
 
 @RestController
 @RequestMapping("/api/trip")
 public class TripController {
+    private static final int MAX_PAGE_SIZE = 50;
+
     @Autowired
     private TripService tripService;
 
@@ -52,8 +53,10 @@ public class TripController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<TripReturnDto>> listAllTrips() {
-        List<TripReturnDto> trips = tripService.listAllTrips();
+    public ResponseEntity<TripPageDto> listAllTrips(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        TripPageDto trips = tripService.listAllTrips(page, Math.min(size, MAX_PAGE_SIZE));
         return ResponseEntity.ok().body(trips);
     }
 }

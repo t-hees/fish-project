@@ -30,6 +30,7 @@ import com.tadeo.fish_project.dto.IdDto;
 import com.tadeo.fish_project.dto.SimpleCatchDto;
 import com.tadeo.fish_project.dto.SpecialCatchDto;
 import com.tadeo.fish_project.dto.TripDto;
+import com.tadeo.fish_project.dto.TripPageDto;
 import com.tadeo.fish_project.dto.TripReturnDto;
 import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.repository.TripRepository;
@@ -62,9 +63,10 @@ class TripIntTest {
         "notes");
 
     private List<TripReturnDto> getAllTrips() throws RuntimeException {
-        return testUserAuth.exchangeRestWithAuth("/api/trip/all", HttpMethod.GET,
-            new ParameterizedTypeReference<List<TripReturnDto>>() {}, null,
+        TripPageDto tripPage = testUserAuth.exchangeRestWithAuth("/api/trip/all?page=0&size=50", HttpMethod.GET,
+            new ParameterizedTypeReference<TripPageDto>() {}, null,
             HttpStatus.OK, "Failed to get all trips");
+        return tripPage.trips();
     }
 
     @BeforeEach

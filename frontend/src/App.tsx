@@ -14,7 +14,7 @@ export default function App() {
   const {isAuthenticated, fetchName} = useContext(AuthContext);
 
   useEffect(() => {
-    isAuthenticated() && fetchName();
+    fetchName();
   }, []);
 
   return (

@@ -1,6 +1,8 @@
 package com.tadeo.fish_project.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -19,6 +21,7 @@ import com.tadeo.fish_project.exception.FishNotFoundException;
 import com.tadeo.fish_project.exception.TripNotFoundException;
 import com.tadeo.fish_project.entity.Image;
 import com.tadeo.fish_project.dto.TripDto;
+import com.tadeo.fish_project.dto.TripPageDto;
 import com.tadeo.fish_project.dto.TripReturnDto;
 import com.tadeo.fish_project.dto.AllCatchesDto;
 import com.tadeo.fish_project.dto.EditCatchesDto;
@@ -134,10 +137,10 @@ public class TripService {
         return new AllCatchesDto(simpleCatches, specialCatches);
     }
 
-    public List<TripReturnDto> listAllTrips() {
+    public TripPageDto listAllTrips(int page, int size) {
         User user = userService.getUser();
-        List<Trip> trips = tripRepository.findByUserOrderByTimeDesc(user);
-        return trips.stream()
+        Page<Trip> tripPage = tripRepository.findByUserOrderByTimeDesc(user, PageRequest.of(page, size));
+        List<TripReturnDto> trips = tripPage.getContent().stream()
             .map(trip -> new TripReturnDto(
                 trip.getId(),
                 trip.getLocation(),
@@ -150,5 +153,6 @@ public class TripService {
                 trip.getNotes()
             ))
             .collect(Collectors.toList());
+        return new TripPageDto(trips, tripPage.hasNext(), tripPage.getTotalElements());
     }
 }
