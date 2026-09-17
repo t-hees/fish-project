@@ -61,6 +61,31 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+button.danger {
+  background-color: #7a2b2b;
+}
+button.danger:hover {
+  background-color: #963636;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 1em;
+  color: inherit;
+  background-color: #2b2b2b;
+  border: 1px solid #4d4d4d;
+  border-radius: 6px;
+  padding: 0.5em 0.7em;
+  box-sizing: border-box;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #646cff;
+  outline-offset: 1px;
+}
 
 .main-flex-container {
   display: flex;
@@ -83,11 +108,77 @@ button:focus-visible {
 
 .form-label {
   display: block;
-  margin-bottom: 5px;
+  margin: 14px 0 5px;
 }
 
 .form-submit-button {
   margin-top: 7px;
+}
+
+.label,
+.section-title {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.section-title {
+  display: block;
+  margin: 10px 0 6px;
+}
+
+.empty-state {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.45);
+  font-style: italic;
+}
+
+/* Reusable card-style list, e.g. for catches or other grouped entries */
+.entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  text-align: left;
+}
+.entry-list-item {
+  background-color: #3a3a3a;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.entry-list-item h3 {
+  margin: 0 0 4px;
+}
+.entry-list-item p {
+  margin: 2px 0;
+  color: rgba(255, 255, 255, 0.75);
+}
+.entry-list-item img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 6px 0;
+}
+
+.quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.simple-catch-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+.simple-catch-table td {
+  padding: 4px 0;
+  border-bottom: 1px solid #3d3d3d;
+}
+.simple-catch-table td:last-child {
+  text-align: right;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .form-notification-container {

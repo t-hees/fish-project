@@ -65,8 +65,8 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
 
   const deleteSpecialCatchButton = (fish: SpecialCatchWithIdDto) => {
     return (
-      <button onClick={() => setRemovableSpecialCatchIds([...removableSpecialCatchIds, fish.catchId])}>
-        Fish Löschen
+      <button className="danger" onClick={() => setRemovableSpecialCatchIds([...removableSpecialCatchIds, fish.catchId])}>
+        Fisch löschen
       </button>
     )
   }
@@ -84,9 +84,9 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
           displayFunc={(fish: SimpleFish) => `${fish.commonName} (${fish.scientificName})`}
           setError={setError}
         />
-        <ul>
+        <ul className="entry-list">
           {simpleCatches.map((fish) => (
-            <li key={fish.fishId}>
+            <li className="entry-list-item quantity-row" key={fish.fishId}>
               <span>{fish.name}</span>
               <button onClick={() => {
                 if (fish.amount < 2) {
@@ -127,10 +127,10 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
           displayFunc={(fish: SimpleFish) => `${fish.commonName} (${fish.scientificName})`}
           setError={setError}
         />
-        <ul>
+        <ul className="entry-list">
           {specialCatches.map((fish) => (
-            <li key={fish.fishId}>
-              <h2>{fish.name}</h2>
+            <li className="entry-list-item" key={fish.fishId}>
+              <h3>{fish.name}</h3>
               <label className="form-label">Foto</label>
               {fish.imageData &&
                 <img src={fish.imageData} alt="Fish Foto"/>
@@ -164,7 +164,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
         <hr />
       </div>
 
-      <button onClick={submitFish}>
+      <button className="form-submit-button" onClick={submitFish}>
         Absenden
       </button>
     </>

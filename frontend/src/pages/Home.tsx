@@ -105,35 +105,52 @@ function TripContainer ({ setError, setNotification }: NotifiableContentContext)
       <button type="button" onClick={() => navigate("/create-trip")}>
         Neuer Angelausflug
       </button>
-      {tripList.map((trip) =>
-        <div className="trip-container" onClick={() => toggleTripContainer(trip.id)}>
-          <h2>{trip.time.toString().split("T")[0]} - {trip.location}</h2>
-          <div className={`trip-container-body ${expandedTrips.has(trip.id) ? "expanded" : "collapsed"}`}>
-            {/*
-            <button type="button" onClick={() => 0}>
-              Angelausflug bearbeiten
+      {tripList.map((trip) => {
+        const isExpanded = expandedTrips.has(trip.id);
+        return (
+          <div className="trip-card" key={trip.id}>
+            <button
+              type="button"
+              className="trip-card-header"
+              onClick={() => toggleTripContainer(trip.id)}
+              aria-expanded={isExpanded}
+            >
+              <span className="trip-card-heading">
+                <span className="trip-date">{trip.time.toString().split("T")[0]}</span>
+                <span className="trip-location">{trip.location}</span>
+              </span>
+              <span className={`trip-chevron ${isExpanded ? "expanded" : ""}`}>▾</span>
             </button>
-              */}
-            <div>
-              <p>Uhrzeit: {trip.time.toString().split("T")[1]}</p>
-              <p>Gewässerart: {trip.environment}</p>
-              <p>Dauer: {trip.hours && trip.hours + " Stunden"}</p>
-              <p>Temperatur: {trip.temperature}</p>
-              <p>Wasserpegel: {trip.waterLevel}</p>
-              <p>Wetter: {trip.weather && trip.weather.join(", ")}</p>
-              <p>Notizen:</p>
-              {trip.notes}
+            <div className={`trip-card-body ${isExpanded ? "expanded" : ""}`}>
+              <div className="trip-card-body-inner">
+                <div className="trip-details">
+                  <div className="trip-detail"><span className="label">Uhrzeit</span><span>{trip.time.toString().split("T")[1]}</span></div>
+                  <div className="trip-detail"><span className="label">Gewässerart</span><span>{trip.environment}</span></div>
+                  <div className="trip-detail"><span className="label">Dauer</span><span>{trip.hours ? trip.hours + " Stunden" : "-"}</span></div>
+                  <div className="trip-detail"><span className="label">Temperatur</span><span>{trip.temperature}</span></div>
+                  <div className="trip-detail"><span className="label">Wasserpegel</span><span>{trip.waterLevel}</span></div>
+                  <div className="trip-detail"><span className="label">Wetter</span><span>{trip.weather && trip.weather.length > 0 ? trip.weather.join(", ") : "-"}</span></div>
+                </div>
+                {trip.notes && (
+                  <div className="trip-notes">
+                    <span className="label">Notizen</span>
+                    <p>{trip.notes}</p>
+                  </div>
+                )}
+                {isExpanded && <TripCatches tripId={trip.id} setError={setError}/>}
+                <div className="trip-card-actions">
+                  <button type="button" onClick={() => navigate(`/edit-fish?id=${trip.id}`)}>
+                    Fischliste bearbeiten
+                  </button>
+                  <button type="button" className="danger" onClick={() => tripDelete(trip.id)}>
+                    Eintrag löschen
+                  </button>
+                </div>
+              </div>
             </div>
-            <button type="button" onClick={() => navigate(`/edit-fish?id=${trip.id}`)}>
-              Fishliste bearbeiten
-            </button>
-            {expandedTrips.has(trip.id) && <TripCatches tripId={trip.id} setError={setError}/>}
-            <button type="button" onClick={() => tripDelete(trip.id)}>
-              Eintrag Löschen
-            </button>
           </div>
-        </div>
-      )}
+        );
+      })}
       {hasNext && <div ref={sentinelRef} />}
     </div>
   );
@@ -156,13 +173,18 @@ function TripCatches({ tripId, setError }: {tripId: number, setError: React.Disp
 
   if (loading) return <Loading />
 
+  const isEmpty = simpleCatches.length === 0 && specialCatches.length === 0;
+
   return (
-    <div>
-      <hr />
-      <SimpleCatchList simpleCatches={simpleCatches} />
-      <hr />
-      <SpecialCatchList specialCatches={specialCatches} />
-      <hr />
+    <div className="trip-catches">
+      <span className="label section-title">Fänge</span>
+      {isEmpty
+        ? <p className="empty-state">Noch keine Fänge erfasst.</p>
+        : <>
+            {simpleCatches.length > 0 && <SimpleCatchList simpleCatches={simpleCatches} />}
+            {specialCatches.length > 0 && <SpecialCatchList specialCatches={specialCatches} />}
+          </>
+      }
     </div>
   )
 }

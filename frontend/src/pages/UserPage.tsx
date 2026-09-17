@@ -75,12 +75,14 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
                   setVerificationContext({message: changePasswordMessage, action: changePassword})
                 }}>
                   <label className="form-label">Neues password:</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
+                  <div>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
+                  </div>
                   <button className="form-submit-button" type="submit">Password ändern</button>
                 </form>
                 <div>
@@ -104,12 +106,14 @@ function UserActionVerification(verificationContext: VerificationContext) {
   return (
     <form onSubmit={() => verificationContext.action(oldPassword)}>
         <label className="form-label">{verificationContext.message}</label>
-        <input
-          type="password"
-          value={oldPassword}
-          onChange={(e) => setOldPassword(e.target.value)}
-          required
-        />
+        <div>
+          <input
+            type="password"
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+            required
+          />
+        </div>
         <button className="form-submit-button" type="submit">Senden</button>
       </form>
   )

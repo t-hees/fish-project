@@ -1,21 +1,109 @@
-.trip-container {
-  background-color: #4d4d4d;
-  text-align: center;
-  box-sizing: border-box;
-}
-.trip-container:hover {
-  background-color: #5d5d5d;
-}
-.trip-container-body {
-  /* height: 0; */
+.trip-card {
+  background-color: #333;
+  border: 1px solid #3d3d3d;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  transition: height 0.2s;
-  padding: 0 10px;
+  transition: border-color 0.2s;
 }
-.trip-container-body.expanded {
-  height: 300px;
-  overflow-y: auto;
+.trip-card:hover {
+  border-color: #555;
 }
-.trip-container-body.collapsed {
-  height: 0;
+
+.trip-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  margin: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.trip-card-header:hover,
+.trip-card-header:focus-visible {
+  background-color: #3a3a3a;
+}
+
+.trip-card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 1.15em;
+}
+.trip-date {
+  font-weight: 600;
+  color: #9fb4ff;
+}
+.trip-location {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.trip-chevron {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s ease;
+}
+.trip-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+/* Auto-height expand/collapse animation without a fixed height, so the
+   card only ever takes up as much space as its content actually needs. */
+.trip-card-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.trip-card-body.expanded {
+  grid-template-rows: 1fr;
+}
+.trip-card-body-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.trip-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px 16px;
+  padding: 4px 18px 12px;
+  text-align: left;
+}
+.trip-detail {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.trip-notes {
+  padding: 0 18px 12px;
+  text-align: left;
+}
+.trip-notes p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
+.trip-catches {
+  padding: 4px 18px 4px;
+  border-top: 1px solid #3d3d3d;
+  text-align: left;
+}
+
+.trip-card-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 18px 18px;
 }

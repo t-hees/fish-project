@@ -49,10 +49,10 @@ export type SpecialCatchListType = {
 };
 export function SpecialCatchList({ specialCatches, action }: SpecialCatchListType) {
   return(
-    <div>
+    <div className="entry-list">
       {specialCatches.map((fish) => {
-        return <div>
-                 <h3>Name: {fish.name}</h3>
+        return <div className="entry-list-item" key={fish.catchId}>
+                 <h3>{fish.name}</h3>
                  {fish.imageData && <img src={fish.imageData} alt="noimage"/>}
                  <p>Größe: {fish.size}</p>
                  <p>Gewicht: {fish.weight}</p>
@@ -66,13 +66,15 @@ export function SpecialCatchList({ specialCatches, action }: SpecialCatchListTyp
 
 export function SimpleCatchList({ simpleCatches }: {simpleCatches: SimpleCatchDto[]}) {
   return(
-    <table>
-      {simpleCatches.map((fish) => {
-        return <tr>
-                 <td>{fish.name}</td>
-                 <td>{fish.amount}</td>
-               </tr>
-      })}
+    <table className="simple-catch-table">
+      <tbody>
+        {simpleCatches.map((fish) => {
+          return <tr key={fish.fishId}>
+                   <td>{fish.name}</td>
+                   <td>{fish.amount}</td>
+                 </tr>
+        })}
+      </tbody>
     </table>
   )
 }
