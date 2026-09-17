@@ -7,5 +7,5 @@ import java.util.Set;
 import com.tadeo.fish_project.entity.Trip;
 
 public record TripDto (String location, Trip.Environment environment, LocalDateTime time,
-    Integer hours, Long temperature, Long waterLevel,
+    Long hours, Long temperature, Long waterLevel,
     Set<Trip.Weather> weather, String notes){};

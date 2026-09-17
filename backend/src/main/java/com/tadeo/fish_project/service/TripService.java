@@ -146,7 +146,7 @@ public class TripService {
                 trip.getLocation(),
                 trip.getEnvironment(),
                 trip.getTime(),
-                trip.getDuration(),
+                (trip.getDuration() != null) ? trip.getDuration().toHours() : null,
                 trip.getTemperature(),
                 trip.getWaterLevel(),
                 trip.getWeather(),

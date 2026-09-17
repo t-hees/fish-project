@@ -58,7 +58,7 @@ class TripIntTest {
         "cool lake",
         Trip.Environment.LAKE,
         LocalDateTime.of(2026, 04, 05, 6, 30),
-        3, 30l, 30000l,
+        3l, 30l, 30000l,
         Set.of(Trip.Weather.CLEAR_SKY, Trip.Weather.LIGHT_RAIN),
         "notes");
 
