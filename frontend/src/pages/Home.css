@@ -1,3 +1,14 @@
+.trip-search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.trip-search-bar .search-input {
+  flex: 1 1 200px;
+}
+
 .trip-card {
   background-color: #333;
   border: 1px solid #3d3d3d;

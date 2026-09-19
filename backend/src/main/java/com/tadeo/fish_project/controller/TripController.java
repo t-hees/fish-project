@@ -1,6 +1,9 @@
 package com.tadeo.fish_project.controller;
 
+import java.time.LocalDate;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,8 +58,12 @@ public class TripController {
     @GetMapping("/all")
     public ResponseEntity<TripPageDto> listAllTrips(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        TripPageDto trips = tripService.listAllTrips(page, Math.min(size, MAX_PAGE_SIZE));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) Trip.Environment environment,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        TripPageDto trips = tripService.listAllTrips(page, Math.min(size, MAX_PAGE_SIZE), location, environment, from, to);
         return ResponseEntity.ok().body(trips);
     }
 }

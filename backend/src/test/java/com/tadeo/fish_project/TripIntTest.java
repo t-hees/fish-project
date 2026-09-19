@@ -69,6 +69,18 @@ class TripIntTest {
         return tripPage.trips();
     }
 
+    private List<TripReturnDto> searchTrips(String queryString) throws RuntimeException {
+        TripPageDto tripPage = testUserAuth.exchangeRestWithAuth("/api/trip/all?page=0&size=50&" + queryString,
+            HttpMethod.GET, new ParameterizedTypeReference<TripPageDto>() {}, null,
+            HttpStatus.OK, "Failed to search trips");
+        return tripPage.trips();
+    }
+
+    private void createTrip(TripDto dto) {
+        testUserAuth.exchangeRestWithAuth("/api/trip/create", HttpMethod.POST,
+            new ParameterizedTypeReference<String>() {}, dto, HttpStatus.CREATED, "Failed to create trip");
+    }
+
     @BeforeEach
     void initTrips() {
         tripRepository.deleteAll();
@@ -91,6 +103,30 @@ class TripIntTest {
             getAllTrips(),
             "Unexpected result after deletion"
         );
+    }
+
+    @Test
+    void testSearchTrips() {
+        // @BeforeEach already created "cool lake" (LAKE) on 2026-04-05
+        createTrip(new TripDto("River Bend", Trip.Environment.RIVER, LocalDateTime.of(2026, 6, 1, 9, 0),
+            2l, 20l, 100l, Set.of(Trip.Weather.CLOUDY), "river notes"));
+        createTrip(new TripDto("Ocean Pier", Trip.Environment.OCEAN, LocalDateTime.of(2026, 7, 15, 10, 0),
+            4l, 22l, 200l, Set.of(Trip.Weather.CLEAR_SKY), "ocean notes"));
+
+        assertAll(
+            "Filtering by location should be a case-insensitive substring match",
+            () -> assertEquals(1, searchTrips("location=river").size()),
+            () -> assertEquals(1, searchTrips("location=COOL").size()),
+            () -> assertEquals(0, searchTrips("location=nonexistent").size())
+        );
+
+        assertEquals(1, searchTrips("environment=OCEAN").size(), "Filtering by environment should match exactly");
+
+        assertEquals(2, searchTrips("from=2026-05-01&to=2026-08-01").size(),
+            "Date range should include River Bend and Ocean Pier but exclude the earlier lake trip");
+
+        assertEquals(1, searchTrips("location=river&environment=RIVER").size(),
+            "Combined filters should apply together");
     }
 
     @Test

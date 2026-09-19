@@ -3,8 +3,9 @@ import { NotifiableContainer, type NotifiableContentContext, type WrappedCompone
 import { fetchApi } from "../util/fetchApi";
 import { Loading } from "../components/Loading";
 import { useNavigate } from "react-router-dom";
+import { useDebounce } from "../util/useDebounce";
 import "./Home.css";
-import type { TripDto } from "../components/api/Trip";
+import { environmentList, type TripDto } from "../components/api/Trip";
 import { SimpleCatchList, SpecialCatchList, type AllCatchesDto, type SimpleCatchDto, type SpecialCatchWithIdDto } from "../components/api/FishCatch";
 
 type Trip = TripDto & {
@@ -17,26 +18,53 @@ type TripPageDto = {
   totalElements: number,
 }
 
+type TripSearchParams = {
+  location: string,
+  environment: typeof environmentList[number] | "",
+  from: string,
+  to: string,
+}
+
 const TRIP_PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 400;
+const EMPTY_SEARCH_PARAMS: TripSearchParams = { location: "", environment: "", from: "", to: "" };
+
+function buildTripQuery(page: number, size: number, searchParams: TripSearchParams): string {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (searchParams.location.trim()) params.set("location", searchParams.location.trim());
+  if (searchParams.environment) params.set("environment", searchParams.environment);
+  if (searchParams.from) params.set("from", searchParams.from);
+  if (searchParams.to) params.set("to", searchParams.to);
+  return params.toString();
+}
 
 export default function Home() {
-  const OuterWrapper = ({ InnerComponent }: WrappedComponent) => {
+  const [searchParams, setSearchParams] = useState<TripSearchParams>(EMPTY_SEARCH_PARAMS);
+
+  // Stable across renders so the search inputs (and their debounce timer) aren't remounted on every keystroke
+  const OuterWrapper = useCallback(({ InnerComponent }: WrappedComponent) => {
     return (
     <div className="main-flex-container full-page">
       <div className="search-bar">
-        <TripSearchBar />
+        <TripSearchBar onSearch={setSearchParams} />
       </div>
       <InnerComponent />
     </div>
     );
-  }
+  }, []);
+
+  // Recreated whenever the debounced search params change, which remounts TripContainer
+  // and thereby resets pagination and triggers a fresh page-0 fetch with the new filters
+  const MainContent = useCallback((props: NotifiableContentContext) => (
+    <TripContainer {...props} searchParams={searchParams} />
+  ), [searchParams]);
 
   return (
-    <NotifiableContainer MainContent={TripContainer} ContentWrapper={OuterWrapper} />
+    <NotifiableContainer MainContent={MainContent} ContentWrapper={OuterWrapper} />
   );
 }
 
-function TripContainer ({ setError, setNotification }: NotifiableContentContext) {
+function TripContainer ({ setError, setNotification, searchParams }: NotifiableContentContext & { searchParams: TripSearchParams }) {
   const navigate = useNavigate();
   const [tripList, setTripList] = useState<Trip[]>([]);
   const [page, setPage] = useState<number>(0);
@@ -50,7 +78,7 @@ function TripContainer ({ setError, setNotification }: NotifiableContentContext)
     if (loadingRef.current || !hasNext) return;
     loadingRef.current = true;
     setLoading(true);
-    fetchApi(`trip/all?page=${page}&size=${TRIP_PAGE_SIZE}`, "GET",
+    fetchApi(`trip/all?${buildTripQuery(page, TRIP_PAGE_SIZE, searchParams)}`, "GET",
       async (response) => {
         const tripPage: TripPageDto = await response.json();
         setTripList((prev) => [...prev, ...tripPage.trips]);
@@ -63,7 +91,7 @@ function TripContainer ({ setError, setNotification }: NotifiableContentContext)
         setLoading(isLoading);
       }
     )
-  }, [page, hasNext, setError])
+  }, [page, hasNext, searchParams, setError])
 
   useEffect(() => {
     loadNextPage();
@@ -189,10 +217,46 @@ function TripCatches({ tripId, setError }: {tripId: number, setError: React.Disp
   )
 }
 
-function TripSearchBar() {
+function TripSearchBar({ onSearch }: { onSearch: (searchParams: TripSearchParams) => void }) {
+  const [rawParams, setRawParams] = useState<TripSearchParams>(EMPTY_SEARCH_PARAMS);
+  const debouncedParams = useDebounce<TripSearchParams>(rawParams, SEARCH_DEBOUNCE_MS);
+
+  useEffect(() => {
+    onSearch(debouncedParams);
+    // onSearch is the setSearchParams setter from Home, stable across renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedParams])
+
   return (
-    <>
-      Lorem Ipsum
-    </>
+    <div className="trip-search-bar">
+      <input
+        type="text"
+        placeholder="Ort suchen..."
+        value={rawParams.location}
+        onChange={(e) => setRawParams({ ...rawParams, location: e.target.value })}
+        className="search-input"
+      />
+      <select
+        value={rawParams.environment}
+        onChange={(e) => setRawParams({ ...rawParams, environment: e.target.value as TripSearchParams["environment"] })}
+      >
+        <option value="">Alle Gewässer</option>
+        {environmentList.map((environment) => (
+          <option key={environment} value={environment}>{environment}</option>
+        ))}
+      </select>
+      <label className="form-label">Von</label>
+      <input
+        type="date"
+        value={rawParams.from}
+        onChange={(e) => setRawParams({ ...rawParams, from: e.target.value })}
+      />
+      <label className="form-label">Bis</label>
+      <input
+        type="date"
+        value={rawParams.to}
+        onChange={(e) => setRawParams({ ...rawParams, to: e.target.value })}
+      />
+    </div>
   );
 }

@@ -6,6 +6,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -137,9 +139,15 @@ public class TripService {
         return new AllCatchesDto(simpleCatches, specialCatches);
     }
 
-    public TripPageDto listAllTrips(int page, int size) {
+    public TripPageDto listAllTrips(int page, int size, String location, Trip.Environment environment,
+        LocalDate from, LocalDate to) {
+
         User user = userService.getUser();
-        Page<Trip> tripPage = tripRepository.findByUserOrderByTimeDesc(user, PageRequest.of(page, size));
+        LocalDateTime fromDateTime = (from != null) ? from.atStartOfDay() : null;
+        LocalDateTime toDateTime = (to != null) ? to.atTime(23, 59, 59) : null;
+        Page<Trip> tripPage = tripRepository.search(user,
+            (location != null && !location.isBlank()) ? location : null,
+            environment, fromDateTime, toDateTime, PageRequest.of(page, size));
         List<TripReturnDto> trips = tripPage.getContent().stream()
             .map(trip -> new TripReturnDto(
                 trip.getId(),
