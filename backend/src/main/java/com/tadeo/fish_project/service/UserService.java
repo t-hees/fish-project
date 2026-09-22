@@ -3,6 +3,7 @@ package com.tadeo.fish_project.service;
 import com.tadeo.fish_project.dto.UserPasswordDto;
 import com.tadeo.fish_project.entity.User;
 import com.tadeo.fish_project.exception.UserCredentialsException;
+import com.tadeo.fish_project.repository.TripRepository;
 import com.tadeo.fish_project.repository.UserRepository;
 import com.tadeo.fish_project.util.JwtUtil;
 
@@ -19,11 +20,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class UserService implements UserDetailsService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private TripRepository tripRepository;
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -62,8 +67,12 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
     }
 
+    @Transactional
     public void delete(String password) {
         User user = reauthenticate(password);
+        // Trips have to be removed through JPA so their catches and catch join table rows cascade,
+        // the database level ON DELETE CASCADE of trip.user_id doesn't reach those
+        tripRepository.deleteAllByUser(user);
         userRepository.delete(user);
     }
 

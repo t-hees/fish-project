@@ -19,11 +19,14 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        VITE_BACKEND_PORT: ${BACKEND_PORT}
-        VITE_BACKEND_HOST: ${BACKEND_HOST}
     ports:
       - ${FRONTEND_PORT}:80
+    environment:
+      # nginx proxies /api to this address inside the compose network
+      BACKEND_HOST: backend
+      BACKEND_PORT: ${BACKEND_PORT}
+    depends_on:
+      - backend
   db:
     image: docker.io/library/mariadb:latest
     ports:

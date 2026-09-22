@@ -1,0 +1,43 @@
+name: fish-project-e2e
+
+services:
+  e2e-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: e2e-db
+      DB_PORT: 3306
+      DB_DBNAME: e2edatabase
+      DB_USERNAME: e2euser
+      DB_PASSWORD: e2epass
+      BACKEND_PORT: 8080
+      JWT_SECRET: pTj+DBXRkyetocsvSTE1n4r95Gq8rCnCeKvl2qDNBDc=
+    depends_on:
+      e2e-db:
+        condition: service_healthy
+  e2e-frontend:
+    build:
+      context: ./frontend
+    # Differs from the default FRONTEND_PORT so it can run next to the regular stack
+    ports:
+      - 3040:80
+    environment:
+      BACKEND_HOST: e2e-backend
+      BACKEND_PORT: 8080
+    depends_on:
+      - e2e-backend
+  e2e-db:
+    image: docker.io/library/mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: e2edatabase
+      MYSQL_USER: e2euser
+      MYSQL_PASSWORD: e2epass
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    tmpfs:
+      - /var/lib/mysql

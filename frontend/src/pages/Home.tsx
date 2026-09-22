@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useDebounce } from "../util/useDebounce";
 import "./Home.css";
 import { environmentList, type TripDto } from "../components/api/Trip";
+import { buildTripQuery, EMPTY_SEARCH_PARAMS, type TripSearchParams } from "../util/tripQuery";
 import { SimpleCatchList, SpecialCatchList, type AllCatchesDto, type SimpleCatchDto, type SpecialCatchWithIdDto } from "../components/api/FishCatch";
 
 type Trip = TripDto & {
@@ -18,25 +19,8 @@ type TripPageDto = {
   totalElements: number,
 }
 
-type TripSearchParams = {
-  location: string,
-  environment: typeof environmentList[number] | "",
-  from: string,
-  to: string,
-}
-
 const TRIP_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 400;
-const EMPTY_SEARCH_PARAMS: TripSearchParams = { location: "", environment: "", from: "", to: "" };
-
-function buildTripQuery(page: number, size: number, searchParams: TripSearchParams): string {
-  const params = new URLSearchParams({ page: String(page), size: String(size) });
-  if (searchParams.location.trim()) params.set("location", searchParams.location.trim());
-  if (searchParams.environment) params.set("environment", searchParams.environment);
-  if (searchParams.from) params.set("from", searchParams.from);
-  if (searchParams.to) params.set("to", searchParams.to);
-  return params.toString();
-}
 
 export default function Home() {
   const [searchParams, setSearchParams] = useState<TripSearchParams>(EMPTY_SEARCH_PARAMS);

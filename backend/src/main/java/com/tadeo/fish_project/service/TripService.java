@@ -66,7 +66,7 @@ public class TripService {
 
     public void deleteTrip(Long id) {
         Trip trip = tripRepository.findByIdAndUser(id, userService.getUser())
-            .orElseThrow(() -> new FishNotFoundException(id));
+            .orElseThrow(() -> new TripNotFoundException(id));
         tripRepository.delete(trip);
     }
 

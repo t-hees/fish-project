@@ -1,0 +1,62 @@
+name: E2E Tests
+
+# Slower than the other test workflows, so it only runs for pull requests and on demand
+on:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: e2e
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start application stack
+        working-directory: .
+        run: docker compose -f docker-compose.e2e.yml up -d --build
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Waits for the backend itself (see global-setup.ts) before running the journeys
+      - name: Run e2e tests
+        run: npm test
+
+      - name: Show application logs
+        if: failure()
+        working-directory: .
+        run: docker compose -f docker-compose.e2e.yml logs
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 7
+
+      - name: Stop application stack
+        if: always()
+        working-directory: .
+        run: docker compose -f docker-compose.e2e.yml down

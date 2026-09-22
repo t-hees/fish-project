@@ -17,14 +17,18 @@ import com.tadeo.fish_project.service.FishService;
 @Profile("test")
 public class TestFishUtils {
 
+    public static final String someFishScientificName = "Zoarces viviparus";
+
     @Autowired
     FishRepository fishRepository;
 
     @Autowired
     FishService fishService;
 
+    /*
+    Expects an empty fish table (see TestUtils.cleanDatabase), otherwise initializeFromReader is a no-op
+    */
     public Long initializeTestFish() {
-        fishRepository.deleteAll();
         String fishData = """
 "Trisopterus esmarkii","['marine']","native","['Stintdorsch', 'Sparling']","scarce","35.00 cm TL male/unsexed"
 "Conger conger","['brakish', 'marine']","native","['Meeraal', 'Conger', 'Congeraal', 'Gemeiner Meeraal']","scarce","300 cm TL male/unsexed"
@@ -35,6 +39,6 @@ public class TestFishUtils {
         ThrowingSupplier<BufferedReader> readerSupplier = () ->
             new BufferedReader(new StringReader(fishData));
         assertDoesNotThrow(() -> fishService.initializeFromReader(readerSupplier));
-        return fishRepository.findByScientificName("Zoarces viviparus").get().getId();
+        return fishRepository.findByScientificName(someFishScientificName).get().getId();
     }
 }

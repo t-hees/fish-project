@@ -1,0 +1,21 @@
+# Rendered by the nginx image on container start, ${BACKEND_HOST} and ${BACKEND_PORT} come from the environment
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # The browser only talks to this server, so frontend and api share one origin and no CORS is needed
+    location /api/ {
+        proxy_pass http://${BACKEND_HOST}:${BACKEND_PORT};
+        # Keep the host the browser used, so the backend doesn't see same-origin requests as cross-origin
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 10m;
+    }
+
+    # Client side routes (e.g. /create-trip) are handled by the react router
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

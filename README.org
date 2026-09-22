@@ -20,10 +20,13 @@ DB_USERNAME=maria
 DB_PASSWORD=mariapass
 DB_ROOT_PASSWORD=rootpass
 BACKEND_PORT=8080
-BACKEND_HOST=localhost
 FRONTEND_PORT=3030
 JWT_SECRET=pTj+DBXRkyetocsvSTE1n4r95Gq8rCnCeKvl2qDNBDc=
 #+end_src
+
+The browser only talks to the frontend container: its nginx serves the app and proxies all =/api/= requests
+to the backend inside the compose network. Frontend and api therefore share one origin, so no CORS setup is needed
+and the app works under any host name the frontend is reached by.
 
 ** Manual without docker
 *** Database
@@ -52,15 +55,44 @@ mvn spring-boot:run
 
 *** Frontend
 **** Environment
-The following environment has to exist before running =npm run dev= or just when building =npm run build=
+The frontend calls the api under the relative path =/api/=. The vite dev server proxies it to the backend,
+by default at =localhost:8080=. Set the following only if the backend runs elsewhere
 #+begin_src sh
-VITE_BACKEND_PORT=8080
-VITE_BACKEND_HOST=localhost
+BACKEND_HOST=localhost
+BACKEND_PORT=8080
 #+end_src
+When serving a build (=npm run build=) with another web server, it has to proxy =/api/= to the backend
+like =frontend/nginx.conf.template= does.
 **** Running
-Run the following in the frontend root folder after configuring the environment
+Run the following in the frontend root folder
 #+begin_src sh
 npm run dev
+#+end_src
+
+* Testing
+All test suites also run in GitHub Actions, see =.github/workflows/=.
+** Backend
+Unit tests (=*Test.java=) don't need a database
+#+begin_src sh
+cd backend && mvn test
+#+end_src
+Integration tests (=*IT.java=) need a mariadb and are run together with the unit tests in docker
+#+begin_src sh
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from test-backend
+#+end_src
+** Frontend
+Unit and component tests with vitest (requires node >= 22)
+#+begin_src sh
+cd frontend && npm test
+#+end_src
+** End to end
+Playwright journeys against the whole application. The stack runs at =http://localhost:3040/=, so it doesn't
+collide with the regular one, and the tests wait until the backend is up
+#+begin_src sh
+docker compose -f docker-compose.e2e.yml up -d --build
+cd e2e && npm install && npx playwright install chromium
+npm test
+docker compose -f docker-compose.e2e.yml down
 #+end_src
 
 

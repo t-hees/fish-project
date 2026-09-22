@@ -15,7 +15,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.tadeo.fish_project.exception.UserCredentialsException;
 import com.tadeo.fish_project.service.UserService;
+
+import io.jsonwebtoken.JwtException;
 
 import java.io.IOException;
 
@@ -34,29 +37,36 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = null;
-        String username = null;
 
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("AUTH_TOKEN".equals(cookie.getName())) {
                     token = cookie.getValue();
-                    username = (token != "" && token != null) ? jwtUtil.extractUsername(token) : null;
                     break;
                 }
             }
         }
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userService.loadUserByUsername(username);
-            if (jwtUtil.validateToken(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    userDetails,
-                    null,
-                    userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        if (token != null && !token.isEmpty() && SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                authenticate(token, request);
+            } catch (JwtException | UserCredentialsException e) {
+                // Malformed, expired or orphaned tokens just leave the request unauthenticated
+                logger.debug("Rejected auth token", e);
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private void authenticate(String token, HttpServletRequest request) {
+        UserDetails userDetails = userService.loadUserByUsername(jwtUtil.extractUsername(token));
+        if (jwtUtil.validateToken(token, userDetails)) {
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities());
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+        }
     }
 }

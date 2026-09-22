@@ -9,7 +9,8 @@ type ApiError = {
   uri: string
 }
 
-const apiPath = `http://${import.meta.env.VITE_BACKEND_HOST}:${import.meta.env.VITE_BACKEND_PORT}/api/`;
+// Relative, the serving nginx (or the vite dev server) proxies /api to the backend
+const apiPath = "/api/";
 
 export async function fetchApi(relPath: string, method: FetchMethod,
   handleResponse: (arg0: Response) => void, handleError: (arg0: string | null) => void,
@@ -25,9 +26,12 @@ export async function fetchApi(relPath: string, method: FetchMethod,
   })
     .then(async response =>  {
     if (!response.ok) {
-      const responseJson: ApiError = await response.json();
-      console.error(responseJson);
-      throw new Error(responseJson.code + ": " + responseJson.message);
+      // Not every error carries an ApiError body, e.g. a 403 from spring security has none
+      const responseJson: ApiError | null = await response.json().catch(() => null);
+      console.error(responseJson ?? response);
+      throw new Error(responseJson
+        ? responseJson.code + ": " + responseJson.message
+        : response.status + ": " + (response.statusText || "Request failed"));
     }
     return response;
   })
