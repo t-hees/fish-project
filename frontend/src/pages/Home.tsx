@@ -51,23 +51,27 @@ export default function Home() {
 function TripContainer ({ setError, setNotification, searchParams }: NotifiableContentContext & { searchParams: TripSearchParams }) {
   const navigate = useNavigate();
   const [tripList, setTripList] = useState<Trip[]>([]);
-  const [page, setPage] = useState<number>(0);
   const [hasNext, setHasNext] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [expandedTrips, setExpandedTrips] = useState<Set<number>>(new Set());
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef<boolean>(false); // necessary to avoid reloading same page
+  // Refs instead of state, as the observer may call loadNextPage after a page loaded but before the
+  // rerender replaced its closure, which would otherwise load (and append) the same page again
+  const pageRef = useRef<number>(0);
+  const hasNextRef = useRef<boolean>(true);
 
   const loadNextPage = useCallback(() => {
-    if (loadingRef.current || !hasNext) return;
+    if (loadingRef.current || !hasNextRef.current) return;
     loadingRef.current = true;
     setLoading(true);
-    fetchApi(`trip/all?${buildTripQuery(page, TRIP_PAGE_SIZE, searchParams)}`, "GET",
+    fetchApi(`trip/all?${buildTripQuery(pageRef.current, TRIP_PAGE_SIZE, searchParams)}`, "GET",
       async (response) => {
         const tripPage: TripPageDto = await response.json();
+        pageRef.current += 1;
+        hasNextRef.current = tripPage.hasNext;
         setTripList((prev) => [...prev, ...tripPage.trips]);
         setHasNext(tripPage.hasNext);
-        setPage((prev) => prev + 1);
       },
       setError,
       (isLoading) => {
@@ -75,11 +79,11 @@ function TripContainer ({ setError, setNotification, searchParams }: NotifiableC
         setLoading(isLoading);
       }
     )
-  }, [page, hasNext, searchParams, setError])
+  }, [searchParams, setError])
 
   useEffect(() => {
     loadNextPage();
-    // Only meant to run once on mount, loadNextPage advances its own page/hasNext state
+    // Only meant to run once on mount, loadNextPage advances its own page/hasNext refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
