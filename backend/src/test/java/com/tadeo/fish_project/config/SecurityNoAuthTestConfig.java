@@ -1,7 +1,6 @@
 package com.tadeo.fish_project.config;
 
 import com.tadeo.fish_project.service.UserService;
-import com.tadeo.fish_project.util.JwtAuthFilter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
