@@ -1,6 +1,5 @@
 package com.tadeo.fish_project.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,11 +11,13 @@ import com.tadeo.fish_project.service.FishService;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/fish")
+@RequiredArgsConstructor
 public class FishController {
-    @Autowired
-    private FishService fishService;
+    private final FishService fishService;
 
     @GetMapping("/search_by_common_name")
     public ResponseEntity<List<FishNameMappingDto>> searchByCommonName(@RequestParam String name) {

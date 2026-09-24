@@ -1,6 +1,5 @@
 package com.tadeo.fish_project.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -32,17 +31,16 @@ import com.tadeo.fish_project.dto.SpecialCatchWithIdDto;
 import com.tadeo.fish_project.repository.SpecialCatchRepository;
 import com.tadeo.fish_project.repository.TripRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class TripService {
 
-    @Autowired
-    private TripRepository tripRepository;
-    @Autowired
-    private SpecialCatchRepository specialCatchRepository;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private FishService fishSerice;
+    private final TripRepository tripRepository;
+    private final SpecialCatchRepository specialCatchRepository;
+    private final UserService userService;
+    private final FishService fishSerice;
 
     public Trip createTrip(TripDto tripDto) {
         User user = userService.getUser();
@@ -55,7 +53,7 @@ public class TripService {
             .duration((tripDto.hours() != null) ? Duration.ofHours(tripDto.hours()) : null)
             .temperature(tripDto.temperature())
             .waterLevel(tripDto.waterLevel())
-            .weather(tripDto.weather())
+            .weather((tripDto.weather() != null) ? new HashSet<>(tripDto.weather()) : new HashSet<>())
             .notes(tripDto.notes())
             .user(user)
             .build();
@@ -157,7 +155,7 @@ public class TripService {
                 (trip.getDuration() != null) ? trip.getDuration().toHours() : null,
                 trip.getTemperature(),
                 trip.getWaterLevel(),
-                trip.getWeather(),
+                Set.copyOf(trip.getWeather()),
                 trip.getNotes()
             ))
             .collect(Collectors.toList());

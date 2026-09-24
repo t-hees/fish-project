@@ -2,6 +2,7 @@ package com.tadeo.fish_project.service;
 
 import com.tadeo.fish_project.dto.UserPasswordDto;
 import com.tadeo.fish_project.entity.User;
+import com.tadeo.fish_project.exception.DuplicateUsernameException;
 import com.tadeo.fish_project.exception.UserCredentialsException;
 import com.tadeo.fish_project.repository.TripRepository;
 import com.tadeo.fish_project.repository.UserRepository;
@@ -9,7 +10,6 @@ import com.tadeo.fish_project.util.JwtUtil;
 
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,18 +19,19 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private TripRepository tripRepository;
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final TripRepository tripRepository;
+    private final JwtUtil jwtUtil;
 
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    // Same message for unknown users and wrong passwords, so logins don't reveal which usernames exist
+    private static final String invalidLoginMessage = "Invalid username or password";
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -39,11 +40,8 @@ public class UserService implements UserDetailsService {
     }
 
     public User createUser(String username, String password) {
-        if (username == null || password == null) {
-            throw new UserCredentialsException("Username and password should not be null");
-        }
         if (userExists(username)) {
-            throw new UserCredentialsException("Username already exists");
+            throw new DuplicateUsernameException(username);
         }
         User user = new User(username,
                 passwordEncoder.encode(password),
@@ -52,9 +50,10 @@ public class UserService implements UserDetailsService {
     }
 
     public String login(String username, String password) {
-        UserDetails userDetails = loadUserByUsername(username);
-        if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-            throw new UserCredentialsException("Password doesn't match user: " + username);
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new UserCredentialsException(invalidLoginMessage));
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new UserCredentialsException(invalidLoginMessage);
         }
         return jwtUtil.generateToken(username);
     }

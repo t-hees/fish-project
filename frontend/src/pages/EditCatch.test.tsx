@@ -80,5 +80,29 @@ describe("EditCatch", () => {
       newSpecialCatches: [],
       removableSpecialCatchIds: [7],
     }]);
+    // The saved state is reloaded, so submitted new catches aren't sent again by the next submit
+    expect(requestBodies(fetchMock, "trip/get-catches")).toHaveLength(2);
+  });
+
+  it("adds several detailed catches of the same fish", async () => {
+    const fetchMock = renderEditCatch();
+    for (const query of ["aal", "mutter"]) {
+      const specialSearch = (await screen.findAllByPlaceholderText("Suchbegriff eingeben..."))[1];
+      await userEvent.type(specialSearch, query);
+      await userEvent.click(await screen.findByText("Aalmutter (Zoarces viviparus)"));
+    }
+    // Size and weight input of each catch
+    const [firstSize, , secondSize] = screen.getAllByRole("spinbutton");
+    await userEvent.type(firstSize, "30");
+    await userEvent.type(secondSize, "45");
+
+    await userEvent.click(screen.getByText("Absenden"));
+
+    await screen.findByText("Successfully edited catches of trip: 5");
+    const [body] = requestBodies(fetchMock, "trip/edit-catches") as { newSpecialCatches: { fishId: number, size: number }[] }[];
+    expect(body.newSpecialCatches.map(({ fishId, size }) => ({ fishId, size }))).toEqual([
+      { fishId: 1, size: 30 },
+      { fishId: 1, size: 45 },
+    ]);
   });
 });

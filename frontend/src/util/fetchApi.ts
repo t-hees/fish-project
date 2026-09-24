@@ -26,7 +26,7 @@ export async function fetchApi(relPath: string, method: FetchMethod,
   })
     .then(async response =>  {
     if (!response.ok) {
-      // Not every error carries an ApiError body, e.g. a 403 from spring security has none
+      // Not every error carries an ApiError body, e.g. a 401 from spring security has none
       const responseJson: ApiError | null = await response.json().catch(() => null);
       console.error(responseJson ?? response);
       throw new Error(responseJson

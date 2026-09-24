@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useContext, useState } from "react"
 import { fetchApi } from "../util/fetchApi";
+import { AuthContext } from "../util/AuthContext";
 import { Loading } from "../components/Loading";
 import { useNavigate } from "react-router-dom";
 import { NotifiableContainer } from "../components/NotifiableContainer";
@@ -20,6 +21,7 @@ export default function UserPage() {
 
 const User = ({ setNotification, setError }: NotifiableContentContext) => {
   const navigate = useNavigate();
+  const { authClear } = useContext(AuthContext);
   const [newPassword, setNewPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [verificationContext, setVerificationContext] = useState<VerificationContext | null>(null);
@@ -53,11 +55,15 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
     setNotification(message);
   }
 
-  const handleAccountDeletionResponse = async (response: Response) => {
-    const message = await response.text();
+  const handleAccountDeletionResponse = async () => {
     setLoading(false);
-    console.log(message);
+    authClear();
     navigate("/login");
+  }
+
+  const verify = (action: VerificationAction) => (oldPassword: string) => {
+    setVerificationContext(null);
+    action(oldPassword);
   }
 
   return (
@@ -67,7 +73,7 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
         ? <Loading />
         : (
           verificationContext
-            ? <UserActionVerification message={verificationContext.message} action={verificationContext.action} />
+            ? <UserActionVerification message={verificationContext.message} action={verify(verificationContext.action)} />
             : (
               <>
                 <form onSubmit={(e) => {
@@ -104,7 +110,10 @@ function UserActionVerification(verificationContext: VerificationContext) {
   const [oldPassword, setOldPassword] = useState<string>("");
 
   return (
-    <form onSubmit={() => verificationContext.action(oldPassword)}>
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      verificationContext.action(oldPassword);
+    }}>
         <label className="form-label">{verificationContext.message}</label>
         <div>
           <input

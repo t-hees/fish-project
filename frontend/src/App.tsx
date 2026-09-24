@@ -15,7 +15,7 @@ export default function App() {
 
   useEffect(() => {
     fetchName();
-  }, []);
+  }, [fetchName]);
 
   return (
     <>

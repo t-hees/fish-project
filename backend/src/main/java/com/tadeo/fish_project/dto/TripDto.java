@@ -5,6 +5,12 @@ import java.util.Set;
 
 import com.tadeo.fish_project.entity.Trip;
 
-public record TripDto (String location, Trip.Environment environment, LocalDateTime time,
-    Long hours, Long temperature, Long waterLevel,
-    Set<Trip.Weather> weather, String notes){};
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
+
+public record TripDto (@NotBlank @Size(max = 255) String location, Trip.Environment environment,
+    @NotNull LocalDateTime time,
+    @PositiveOrZero Long hours, Long temperature, Long waterLevel,
+    Set<Trip.Weather> weather, @Size(max = 255) String notes){};

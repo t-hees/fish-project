@@ -26,13 +26,13 @@ export default function Home() {
   const [searchParams, setSearchParams] = useState<TripSearchParams>(EMPTY_SEARCH_PARAMS);
 
   // Stable across renders so the search inputs (and their debounce timer) aren't remounted on every keystroke
-  const OuterWrapper = useCallback(({ InnerComponent }: WrappedComponent) => {
+  const OuterWrapper = useCallback(({ children }: WrappedComponent) => {
     return (
     <div className="main-flex-container full-page">
       <div className="search-bar">
         <TripSearchBar onSearch={setSearchParams} />
       </div>
-      <InnerComponent />
+      {children}
     </div>
     );
   }, []);
@@ -111,7 +111,10 @@ function TripContainer ({ setError, setNotification, searchParams }: NotifiableC
   }
 
   const tripDelete = (tripId: number) => {
-    fetchApi("trip/delete", "POST", async (response) => setNotification(await response.text()),
+    fetchApi("trip/delete", "POST", async (response) => {
+        setTripList((prev) => prev.filter((trip) => trip.id !== tripId));
+        setNotification(await response.text());
+      },
       setError, setLoading, {id: tripId})
   }
 
@@ -177,15 +180,14 @@ function TripCatches({ tripId, setError }: {tripId: number, setError: React.Disp
   const [specialCatches, setSpecialCatches] = useState<SpecialCatchWithIdDto[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const initializeCatches = (oldCatches: AllCatchesDto) => {
-    console.log(oldCatches);
-    setSimpleCatches(oldCatches.simpleCatches)
-    setSpecialCatches(oldCatches.specialCatches)
-  }
   useEffect(() => {
-    fetchApi("trip/get-catches", "POST", async (response) => initializeCatches(await response.json()),
+    fetchApi("trip/get-catches", "POST", async (response) => {
+        const catches: AllCatchesDto = await response.json();
+        setSimpleCatches(catches.simpleCatches);
+        setSpecialCatches(catches.specialCatches);
+      },
       setError, setLoading, {id: tripId})
-  }, []);
+  }, [setError, tripId]);
 
   if (loading) return <Loading />
 

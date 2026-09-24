@@ -17,23 +17,20 @@ export default function ItemAutocomplete<T>({ url, onSelect, displayFunc, setErr
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchItem(debouncedQuery);
-  }, [debouncedQuery])
-
-  const fetchItem = (query: string) => {
-    if (query === "") {
-      setLoading(false);
-      setItemList([]);
-    } else {
-      const relPath = url + query;
-      fetchApi(relPath, "GET", async (response) => setItemList(await response.json()),
+    if (debouncedQuery !== "") {
+      fetchApi(url + debouncedQuery, "GET", async (response) => setItemList(await response.json()),
         setError, setLoading)
     }
-  };
+  }, [debouncedQuery, url, setError])
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
-    setLoading(true);
+    if (e.target.value === "") {
+      setItemList([]);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
   }
 
   return (
@@ -50,7 +47,8 @@ export default function ItemAutocomplete<T>({ url, onSelect, displayFunc, setErr
 
       {loading && <Loading />}
       <ul className="item-search-list">
-        {itemList.map((item) =>
+        {/* A search still in flight when the input got cleared may set results afterwards */}
+        {query !== "" && itemList.map((item) =>
           <li
             className="item-search-list-item"
             key={displayFunc(item)}

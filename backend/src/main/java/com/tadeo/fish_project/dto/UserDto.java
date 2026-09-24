@@ -1,3 +1,5 @@
 package com.tadeo.fish_project.dto;
 
-public record UserDto (String username, String password){};
+import jakarta.validation.constraints.NotBlank;
+
+public record UserDto (@NotBlank String username, @NotBlank String password){};

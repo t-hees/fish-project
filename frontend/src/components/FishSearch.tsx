@@ -16,14 +16,10 @@ export default function FishSearch() {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchFish(debouncedQuery);
-  }, [debouncedQuery])
-
-  const fetchFish = (query: string) => {
-    const relPath = `fish/search_by_common_name?name=${query}`;
+    const relPath = `fish/search_by_common_name?name=${debouncedQuery}`;
     fetchApi(relPath, "GET", async (response) => setFishList(await response.json()),
       setError, setLoading)
-  };
+  }, [debouncedQuery])
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);

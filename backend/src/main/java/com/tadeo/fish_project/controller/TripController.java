@@ -2,7 +2,6 @@ package com.tadeo.fish_project.controller;
 
 import java.time.LocalDate;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -21,36 +20,39 @@ import com.tadeo.fish_project.dto.IdDto;
 import com.tadeo.fish_project.dto.TripDto;
 import com.tadeo.fish_project.dto.TripPageDto;
 
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/trip")
+@RequiredArgsConstructor
 public class TripController {
     private static final int MAX_PAGE_SIZE = 50;
 
-    @Autowired
-    private TripService tripService;
+    private final TripService tripService;
 
     @PostMapping("/create")
-    public ResponseEntity<String> createTrip(@RequestBody TripDto tripDto) {
+    public ResponseEntity<String> createTrip(@Valid @RequestBody TripDto tripDto) {
         Trip trip = tripService.createTrip(tripDto);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body("Created trip: " + trip.getId());
     }
 
     @PostMapping("/delete")
-    public ResponseEntity<String> deleteTrip(@RequestBody IdDto idDto) {
+    public ResponseEntity<String> deleteTrip(@Valid @RequestBody IdDto idDto) {
         tripService.deleteTrip(idDto.id());
         return ResponseEntity.ok("Successfully deleted Trip");
     }
 
     @PostMapping("/edit-catches")
-    public ResponseEntity<String> editCatches(@RequestBody EditCatchesDto editCatchesDto) {
+    public ResponseEntity<String> editCatches(@Valid @RequestBody EditCatchesDto editCatchesDto) {
         tripService.editCatches(editCatchesDto);
         return ResponseEntity.ok()
             .body("Successfully edited catches of trip: " + editCatchesDto.tripId());
     }
 
     @PostMapping("/get-catches")
-    public ResponseEntity<AllCatchesDto> getAllCatches(@RequestBody IdDto tripIdDto) {
+    public ResponseEntity<AllCatchesDto> getAllCatches(@Valid @RequestBody IdDto tripIdDto) {
         AllCatchesDto catches = tripService.getAllCatches(tripIdDto.id());
         return ResponseEntity.ok().body(catches);
     }

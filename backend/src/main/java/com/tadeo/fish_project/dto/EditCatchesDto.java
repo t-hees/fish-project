@@ -2,6 +2,9 @@ package com.tadeo.fish_project.dto;
 
 import java.util.List;
 
-public record EditCatchesDto(Long tripId, List<SimpleCatchDto> simpleCatches,
-    List<SpecialCatchDto> newSpecialCatches,
-    List<Long> removableSpecialCatchIds){};
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+
+public record EditCatchesDto(@NotNull Long tripId, @NotNull List<@Valid SimpleCatchDto> simpleCatches,
+    @NotNull List<@Valid SpecialCatchDto> newSpecialCatches,
+    @NotNull List<Long> removableSpecialCatchIds){};

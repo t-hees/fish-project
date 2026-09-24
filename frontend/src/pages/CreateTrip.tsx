@@ -16,9 +16,7 @@ function Trip({ setError }: NotifiableContentContext) {
   const [loading, setLoading] = useState<boolean>(false);
   const [trip, setTripDto] = useState<TripDto>({} as TripDto);
 
-  const handleResponse = async (response: Response) => {
-    const message = await response.text();
-    console.log(message);
+  const handleResponse = async () => {
     navigate("/");
   }
 

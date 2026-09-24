@@ -25,9 +25,7 @@ export const Register = ({ setNotification, setError }: NotifiableContentContext
     fetchApi(relPath, "POST", handleResponse, setError, setLoading, jsonBody);
   }
 
-  const handleResponse = async (response: Response) => {
-    const message = await response.text();
-    console.log(message);
+  const handleResponse = async () => {
     setNotification("Registrierung erfolgreich! Versuche Login");
   }
 
@@ -50,6 +48,8 @@ export const Register = ({ setNotification, setError }: NotifiableContentContext
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            maxLength={72}
             required
           />
         </div>

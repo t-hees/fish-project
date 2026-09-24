@@ -3,34 +3,37 @@ package com.tadeo.fish_project.controller;
 import java.time.Duration;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.tadeo.fish_project.dto.RegisterDto;
 import com.tadeo.fish_project.dto.StringDto;
 import com.tadeo.fish_project.dto.UserDto;
 import com.tadeo.fish_project.dto.UserPasswordDto;
 import com.tadeo.fish_project.service.UserService;
 
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/user")
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> createUser(@RequestBody UserDto data) {
+    public ResponseEntity<String> createUser(@Valid @RequestBody RegisterDto data) {
         userService.createUser(data.username(), data.password());
         return ResponseEntity.status(HttpStatus.CREATED)
             .body("Created user: " + data.username());
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody UserDto authRequest) {
+    public ResponseEntity<String> login(@Valid @RequestBody UserDto authRequest) {
         String token = userService.login(authRequest.username(), authRequest.password());
 
         ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", token)
@@ -62,13 +65,13 @@ public class UserController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<String> changePassword(@RequestBody UserPasswordDto userPasswordDto) {
+    public ResponseEntity<String> changePassword(@Valid @RequestBody UserPasswordDto userPasswordDto) {
         userService.changePassword(userPasswordDto);
         return ResponseEntity.ok("Successfully changed password");
     }
 
     @PostMapping("/delete")
-    public ResponseEntity<String> delete(@RequestBody StringDto passwordDto) {
+    public ResponseEntity<String> delete(@Valid @RequestBody StringDto passwordDto) {
         userService.delete(passwordDto.string());
         return ResponseEntity.ok("Successfully deleted user");
     }

@@ -10,9 +10,9 @@ export default function Navbar() {
 
   const userLogout = () => {
     fetchApi("user/logout", "POST",
-      () => {console.log("successfully logged out user"); authClear(); navigate("/login")},
+      () => {authClear(); navigate("/login")},
       (error) => console.error(error),
-      () => console.log("requesting user logout"));
+      () => {});
   }
 
   return (

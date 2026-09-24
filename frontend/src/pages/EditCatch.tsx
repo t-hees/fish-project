@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { NotifiableContainer, type NotifiableContentContext } from "../components/NotifiableContainer";
 import ItemAutocomplete from "../components/ItemAutocomplete";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loading } from "../components/Loading";
 import { fetchApi } from "../util/fetchApi";
 import { encodeImage } from "../util/imageUtil";
@@ -20,22 +20,26 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
   const [specialCatches, setSpecialCatches] = useState<SpecialCatchDto[]>([]);
   const [oldSpecialCatches, setOldSpecialCatches] = useState<SpecialCatchWithIdDto[]>([]);
   const [removableSpecialCatchIds, setRemovableSpecialCatchIds] = useState<number[]>([]);
-  const [initialLoading, setInitialLoading] = useState<boolean>(true);
-  const [_, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const initializeOldCatches = (oldCatches: AllCatchesDto) => {
-    console.log(oldCatches);
-    setSimpleCatches(oldCatches.simpleCatches)
-    setOldSpecialCatches(oldCatches.specialCatches)
-  }
-
-  useEffect(() => {
-    fetchApi("trip/get-catches", "POST", async (response) => initializeOldCatches(await response.json()),
-      setError, setInitialLoading, {id: tripId})
+  // Replaces all local edits with the catches as currently saved
+  const loadCatches = useCallback(() => {
+    fetchApi("trip/get-catches", "POST", async (response) => {
+        const savedCatches: AllCatchesDto = await response.json();
+        setSimpleCatches(savedCatches.simpleCatches);
+        setOldSpecialCatches(savedCatches.specialCatches);
+        setSpecialCatches([]);
+        setRemovableSpecialCatchIds([]);
+      },
+      setError, setLoading, {id: tripId})
   }, [setError, tripId]);
 
+  useEffect(() => {
+    loadCatches();
+  }, [loadCatches]);
+
   if (!tripId) return (<h1>ERROR: No trip id parameter provided</h1>);
-  if (initialLoading) return <Loading />
+  if (loading) return <Loading />
 
 
   const updateSimpleCatches = (id: number, upFunc: (dto: SimpleCatchDto) => SimpleCatchDto) => {
@@ -45,8 +49,9 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
     setSimpleCatches(updatedValues);
   }
 
-  const updateSpecialCatches = (id: number, upFunc: (dto: SpecialCatchDto) => SpecialCatchDto) => {
-    const updatedValues = specialCatches.map(sCatch => (sCatch.fishId === id)
+  // By position, as there can be several detailed catches of the same fish
+  const updateSpecialCatches = (index: number, upFunc: (dto: SpecialCatchDto) => SpecialCatchDto) => {
+    const updatedValues = specialCatches.map((sCatch, idx) => (idx === index)
       ? upFunc(sCatch)
       : sCatch);
     setSpecialCatches(updatedValues);
@@ -59,8 +64,12 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
       newSpecialCatches: specialCatches,
       removableSpecialCatchIds: removableSpecialCatchIds,
     };
-    fetchApi("trip/edit-catches", "POST", async (response) => setNotification(await response.text()),
-      setError, setLoading, data)
+    fetchApi("trip/edit-catches", "POST", async (response) => {
+        setNotification(await response.text());
+        // Submitted new catches are saved catches now, keeping them as new ones would save them again
+        loadCatches();
+      },
+      setError, () => {}, data)
   }
 
   const deleteSpecialCatchButton = (fish: SpecialCatchWithIdDto) => {
@@ -73,8 +82,6 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
 
   return (
     <>
-      <FishList setError={setError} setNotification={setNotification} />
-
       <div>
         <h2>Einfache Fischeinträge</h2>
         <ItemAutocomplete<SimpleFish>
@@ -115,8 +122,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
         />
         <ItemAutocomplete<SimpleFish>
           url="fish/search_by_common_name?name="
-          onSelect={(fish: SimpleFish) => (!specialCatches.some(scatch => scatch.fishId === fish.id))
-            && setSpecialCatches([...specialCatches, {
+          onSelect={(fish: SimpleFish) => setSpecialCatches([...specialCatches, {
               name: fish.commonName,
               fishId: fish.id,
               imageData: null,
@@ -128,8 +134,9 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
           setError={setError}
         />
         <ul className="entry-list">
-          {specialCatches.map((fish) => (
-            <li className="entry-list-item" key={fish.fishId}>
+          {specialCatches.map((fish, index) => (
+            // New catches are only ever appended, so their position is a stable key
+            <li className="entry-list-item" key={index}>
               <h3>{fish.name}</h3>
               <label className="form-label">Foto</label>
               {fish.imageData &&
@@ -138,25 +145,25 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => e.target.files && encodeImage(e.target.files[0], (image) => updateSpecialCatches(fish.fishId, (dto) => {return {...dto, imageData: image}}))}
+                onChange={(e) => e.target.files && encodeImage(e.target.files[0], (image) => updateSpecialCatches(index,(dto) => {return {...dto, imageData: image}}))}
               />
               <label className="form-label">Größe</label>
               <input
                 type="number"
                 value={fish.size ? fish.size : ""}
-                onChange={(e) => updateSpecialCatches(fish.fishId, (dto) => {return {...dto, size: e.target.valueAsNumber}})}
+                onChange={(e) => updateSpecialCatches(index, (dto) => {return {...dto, size:e.target.valueAsNumber}})}
               />
               <label className="form-label">Gewicht</label>
               <input
                 type="number"
                 value={fish.weight ? fish.weight : ""}
-                onChange={(e) => updateSpecialCatches(fish.fishId, (dto) => {return {...dto, weight: e.target.valueAsNumber}})}
+                onChange={(e) => updateSpecialCatches(index, (dto) => {return {...dto, weight:e.target.valueAsNumber}})}
               />
               <label className="form-label">Notizen</label>
               <input
                 type="text"
                 value={fish.notes ? fish.notes : ""}
-                onChange={(e) => updateSpecialCatches(fish.fishId, (dto) => {return {...dto, notes: e.target.value}})}
+                onChange={(e) => updateSpecialCatches(index, (dto) => {return {...dto, notes:e.target.value}})}
               />
             </li>
           ))}
@@ -169,8 +176,4 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
       </button>
     </>
   )
-}
-
-function FishList({}: NotifiableContentContext) {
-  return (<></>)
 }

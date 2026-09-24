@@ -9,9 +9,9 @@ export default async function globalSetup(config: FullConfig) {
   let lastStatus = 'no response';
   while (Date.now() < deadline) {
     try {
-      // Unauthenticated, so a running backend answers 403 while the proxy answers 502 without one
+      // Unauthenticated, so a running backend answers 401 while the proxy answers 502 without one
       const response = await fetch(`${baseURL}/api/user/name`);
-      if (response.status === 403) return;
+      if (response.status === 401) return;
       lastStatus = String(response.status);
     } catch (e) {
       lastStatus = String(e);

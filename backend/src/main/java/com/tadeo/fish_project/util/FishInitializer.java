@@ -5,7 +5,6 @@ import java.io.InputStreamReader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
@@ -14,13 +13,15 @@ import org.springframework.util.function.ThrowingSupplier;
 
 import com.tadeo.fish_project.service.FishService;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
 @Profile("!test")
+@RequiredArgsConstructor
 public class FishInitializer implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(FishInitializer.class);
 
-    @Autowired
-    private FishService fishService;
+    private final FishService fishService;
 
     @Override
     public void run(String... args) {

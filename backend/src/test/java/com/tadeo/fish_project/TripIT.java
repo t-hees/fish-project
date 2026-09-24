@@ -101,9 +101,15 @@ class TripIT {
 
     private ApiError expectEntityNotFound(String username, String url, Object data) {
         ApiError error = testUserAuth.exchangeErrorAs(username, url, HttpMethod.POST, data,
-            HttpStatus.BAD_REQUEST, "Expected request to be rejected");
+            HttpStatus.NOT_FOUND, "Expected request to be rejected");
         assertEquals("ENTITY_NOT_FOUND", error.code());
         return error;
+    }
+
+    private void expectValidationFail(String url, Object data) {
+        ApiError error = testUserAuth.exchangeErrorAs(TestUserAuth.username, url, HttpMethod.POST, data,
+            HttpStatus.BAD_REQUEST, "Expected invalid request to be rejected");
+        assertEquals("VALIDATION_FAILED", error.code());
     }
 
     @BeforeEach
@@ -121,6 +127,23 @@ class TripIT {
                 tripDto.hours(), tripDto.temperature(), tripDto.waterLevel(), tripDto.weather(), tripDto.notes()),
             trip
         );
+    }
+
+    @Test
+    void testCreateInvalidTrip() {
+        expectValidationFail("/api/trip/create", new TripDto(" ", null, LocalDateTime.of(2026, 1, 1, 0, 0),
+            null, null, null, null, null));
+        expectValidationFail("/api/trip/create", new TripDto("no time", null, null,
+            null, null, null, null, null));
+        expectValidationFail("/api/trip/create", new TripDto("negative hours", null, LocalDateTime.of(2026, 1, 1, 0, 0),
+            -1l, null, null, null, null));
+        assertEquals(1, getAllTrips().size());
+    }
+
+    @Test
+    void testEditCatchesWithInvalidAmount() {
+        expectValidationFail("/api/trip/edit-catches", new EditCatchesDto(firstTripId(),
+            List.of(new SimpleCatchDto(someFishId, 0, Optional.empty())), List.of(), List.of()));
     }
 
     @Test

@@ -88,10 +88,17 @@ class UserIT {
         return httpHeaders;
     }
 
-    private void expectAuthFail(String url, Object data, HttpHeaders headers, String errorMessage) {
+    private ApiError expectAuthFail(String url, Object data, HttpHeaders headers, String errorMessage) {
         ApiError error = testUtils.exchangeError(url, HttpMethod.POST, data, headers,
-            HttpStatus.BAD_REQUEST, errorMessage);
+            HttpStatus.UNAUTHORIZED, errorMessage);
         assertEquals("AUTH_FAIL", error.code());
+        return error;
+    }
+
+    private void expectValidationFail(String url, Object data, String errorMessage) {
+        ApiError error = testUtils.exchangeError(url, HttpMethod.POST, data, new HttpHeaders(),
+            HttpStatus.BAD_REQUEST, errorMessage);
+        assertEquals("VALIDATION_FAILED", error.code());
     }
 
     @BeforeEach
@@ -111,24 +118,32 @@ class UserIT {
 
     @Test
     void testCreateDuplicateUser() {
-        expectAuthFail("/api/user/register", userDto, new HttpHeaders(), "Duplicate username should be rejected");
+        ApiError error = testUtils.exchangeError("/api/user/register", HttpMethod.POST, userDto, new HttpHeaders(),
+            HttpStatus.CONFLICT, "Duplicate username should be rejected");
+        assertEquals("USERNAME_TAKEN", error.code());
         assertEquals(1, userRepository.count());
     }
 
     @Test
-    void testCreateUserWithoutCredentials() {
-        expectAuthFail("/api/user/register", new UserDto(null, "pass"), new HttpHeaders(),
+    void testCreateUserWithInvalidCredentials() {
+        expectValidationFail("/api/user/register", new UserDto(null, "longenough"),
             "Missing username should be rejected");
-        expectAuthFail("/api/user/register", new UserDto("name", null), new HttpHeaders(),
+        expectValidationFail("/api/user/register", new UserDto("name", null),
             "Missing password should be rejected");
+        expectValidationFail("/api/user/register", new UserDto("name", "short"),
+            "Too short password should be rejected");
+        assertEquals(1, userRepository.count());
     }
 
     @Test
     void testLogin() {
-        expectAuthFail("/api/user/login", new UserDto(userDto.username(), userDto.password() + "f"),
+        ApiError wrongPassword = expectAuthFail("/api/user/login",
+            new UserDto(userDto.username(), userDto.password() + "f"),
             new HttpHeaders(), "Login with wrong password should fail");
-        expectAuthFail("/api/user/login", new UserDto("unknown", userDto.password()),
+        ApiError unknownUser = expectAuthFail("/api/user/login", new UserDto("unknown", userDto.password()),
             new HttpHeaders(), "Login of unknown user should fail");
+        assertEquals(wrongPassword.message(), unknownUser.message(),
+            "Login errors shouldn't reveal whether a username exists");
 
         ResponseEntity<String> response = performLogin(userDto);
         assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
@@ -146,17 +161,17 @@ class UserIT {
 
     @Test
     void testProtectedEndpointsRequireAuth() {
-        assertEquals(HttpStatus.FORBIDDEN, getUsername(new HttpHeaders()).getStatusCode());
-        assertEquals(HttpStatus.FORBIDDEN, testUtils.exchange("/api/trip/all", HttpMethod.GET,
+        assertEquals(HttpStatus.UNAUTHORIZED, getUsername(new HttpHeaders()).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, testUtils.exchange("/api/trip/all", HttpMethod.GET,
             new ParameterizedTypeReference<String>() {}, null, new HttpHeaders()).getStatusCode());
-        assertEquals(HttpStatus.FORBIDDEN, testUtils.exchange("/api/fish/search_by_common_name?name=aal",
+        assertEquals(HttpStatus.UNAUTHORIZED, testUtils.exchange("/api/fish/search_by_common_name?name=aal",
             HttpMethod.GET, new ParameterizedTypeReference<String>() {}, null, new HttpHeaders()).getStatusCode());
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"garbage", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2huIn0.invalidsignature"})
     void testInvalidTokenIsRejected(String token) {
-        assertEquals(HttpStatus.FORBIDDEN, getUsername(TestUserAuth.cookieHeaders(token)).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, getUsername(TestUserAuth.cookieHeaders(token)).getStatusCode());
     }
 
     @Test
@@ -166,19 +181,19 @@ class UserIT {
         String forgedPayload = java.util.Base64.getUrlEncoder().withoutPadding()
             .encodeToString("{\"sub\":\"admin\"}".getBytes());
         String forged = parts[0] + "." + forgedPayload + "." + parts[2];
-        assertEquals(HttpStatus.FORBIDDEN, getUsername(TestUserAuth.cookieHeaders(forged)).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, getUsername(TestUserAuth.cookieHeaders(forged)).getStatusCode());
     }
 
     @Test
     void testTokenOfDeletedUserIsRejected() {
         String token = jwtUtil.generateToken("ghost");
-        assertEquals(HttpStatus.FORBIDDEN, getUsername(TestUserAuth.cookieHeaders(token)).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, getUsername(TestUserAuth.cookieHeaders(token)).getStatusCode());
     }
 
     @Test
     void testChangePasswordWithRelogin() {
         HttpHeaders httpHeaders = performLoginAndGetHeaders(userDto);
-        String newPass = "newpass";
+        String newPass = "newpassword";
 
         // Change password
         expectAuthFail("/api/user/change-password", new UserPasswordDto(userDto.password() + "fail", newPass),
@@ -193,9 +208,9 @@ class UserIT {
         HttpHeaders loggedOutHeaders = new HttpHeaders();
         loggedOutHeaders.add(HttpHeaders.COOKIE, response.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
         assertEquals(
-            HttpStatus.FORBIDDEN,
+            HttpStatus.UNAUTHORIZED,
             getUsername(loggedOutHeaders).getStatusCode(),
-            "Non-authorized access should be forbidden after logout"
+            "Non-authorized access should be rejected after logout"
         );
 
         // Login again

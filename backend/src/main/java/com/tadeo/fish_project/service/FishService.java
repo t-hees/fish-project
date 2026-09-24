@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.function.ThrowingSupplier;
 
@@ -18,12 +17,13 @@ import com.tadeo.fish_project.entity.Fish;
 import com.tadeo.fish_project.repository.FishRepository;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class FishService {
 
-    @Autowired
-    private FishRepository fishRepository;
+    private final FishRepository fishRepository;
 
     public List<FishNameMappingDto> searchByCommonName(String commonName) {
         // Escape LIKE wildcards so user input is matched literally (backslash is the default LIKE escape)

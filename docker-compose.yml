@@ -37,6 +37,6 @@ services:
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - fish-db:/var/lib/mariadb
+      - fish-db:/var/lib/mysql
 volumes:
   fish-db:

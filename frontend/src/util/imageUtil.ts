@@ -1,4 +1,4 @@
-export function encodeImage(imageData: Blob, callback: (arg0: string | null) => any) {
+export function encodeImage(imageData: Blob, callback: (arg0: string | null) => void) {
   const reader = new FileReader();
   reader.onloadend = () => {
     callback(reader.result ? reader.result.toString(): null);

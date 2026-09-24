@@ -27,7 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # TODO: Add `npm run lint` once the existing lint errors are fixed
+      - name: Lint
+        run: npm run lint
+
       - name: Typecheck
         run: npx tsc -b
 

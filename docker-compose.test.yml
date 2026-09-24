@@ -20,4 +20,4 @@ services:
       MYSQL_USER: testuser
       MYSQL_PASSWORD: testpass
     tmpfs:
-      - /var/lib/mariadb
+      - /var/lib/mysql
