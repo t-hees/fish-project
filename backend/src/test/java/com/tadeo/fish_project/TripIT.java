@@ -25,8 +25,6 @@ import org.springframework.test.context.ActiveProfiles;
 import com.tadeo.fish_project.dto.AllCatchesDto;
 import com.tadeo.fish_project.dto.EditCatchesDto;
 import com.tadeo.fish_project.dto.SimpleCatchDto;
-import com.tadeo.fish_project.dto.SpecialCatchDto;
-import com.tadeo.fish_project.dto.SpecialCatchWithIdDto;
 import com.tadeo.fish_project.dto.TripDto;
 import com.tadeo.fish_project.dto.TripPageDto;
 import com.tadeo.fish_project.dto.TripReturnDto;
@@ -160,7 +158,7 @@ class TripIT {
     @Test
     void testEditCatchesWithInvalidAmount() {
         expectValidationFail(catchesUrl(firstTripId()), HttpMethod.PUT, new EditCatchesDto(
-            List.of(new SimpleCatchDto(someFishId, 0, Optional.empty())), List.of(), List.of()));
+            List.of(new SimpleCatchDto(someFishId, 0, Optional.empty())), List.of()));
     }
 
     @Test
@@ -212,7 +210,7 @@ class TripIT {
 
         expectEntityNotFound(other, catchesUrl(tripId), HttpMethod.GET, null);
         expectEntityNotFound(other, catchesUrl(tripId), HttpMethod.PUT,
-            new EditCatchesDto(List.of(new SimpleCatchDto(someFishId, 1, Optional.empty())), List.of(), List.of()));
+            new EditCatchesDto(List.of(new SimpleCatchDto(someFishId, 1, Optional.empty())), List.of()));
         expectEntityNotFound(other, "/api/trips/" + tripId, HttpMethod.DELETE, null);
 
         assertEquals(List.of(tripId), getAllTrips().stream().map(TripReturnDto::id).toList(),
@@ -292,11 +290,8 @@ class TripIT {
         Long tripId = firstTripId();
 
         // Add catches
-        SpecialCatchDto specialCatch = new SpecialCatchDto(someFishId, "data:image/png;base64,3859024=", 24l, 30l,
-            "some notes", "ignored by backend");
         AllCatchesDto editedCatches = editCatches(tripId, new EditCatchesDto(
             List.of(new SimpleCatchDto(someFishId, 4, Optional.of("ignored by backend"))),
-            List.of(specialCatch),
             List.of()));
 
         // Get catches, names are resolved to the scientific name by the backend
@@ -306,23 +301,10 @@ class TripIT {
             List.of(new SimpleCatchDto(someFishId, 4, Optional.of(TestFishUtils.someFishScientificName))),
             allCatches.simpleCatches()
         );
-        assertEquals(1, allCatches.specialCatches().size());
-        SpecialCatchWithIdDto savedSpecialCatch = allCatches.specialCatches().getFirst();
-        assertEquals(
-            new SpecialCatchWithIdDto(savedSpecialCatch.catchId(), someFishId, specialCatch.imageData(),
-                specialCatch.size(), specialCatch.weight(), specialCatch.notes(), TestFishUtils.someFishScientificName),
-            savedSpecialCatch
-        );
 
         // Delete catches
-        editCatches(tripId, new EditCatchesDto(List.of(), List.of(), List.of(savedSpecialCatch.catchId())));
-
-        AllCatchesDto newAllCatches = getCatches(tripId);
-        assertAll(
-            "Getting catches after deletion should be empty",
-            () -> assertTrue(newAllCatches.simpleCatches().isEmpty()),
-            () -> assertTrue(newAllCatches.specialCatches().isEmpty())
-        );
+        editCatches(tripId, new EditCatchesDto(List.of(), List.of()));
+        assertTrue(getCatches(tripId).simpleCatches().isEmpty(), "Getting catches after deletion should be empty");
     }
 
     @Test
@@ -330,9 +312,9 @@ class TripIT {
         Long tripId = firstTripId();
 
         editCatches(tripId, new EditCatchesDto(
-            List.of(new SimpleCatchDto(someFishId, 4, Optional.empty())), List.of(), List.of()));
+            List.of(new SimpleCatchDto(someFishId, 4, Optional.empty())), List.of()));
         editCatches(tripId, new EditCatchesDto(
-            List.of(new SimpleCatchDto(someFishId, 2, Optional.empty())), List.of(), List.of()));
+            List.of(new SimpleCatchDto(someFishId, 2, Optional.empty())), List.of()));
 
         List<SimpleCatchDto> simpleCatches = getCatches(tripId).simpleCatches();
         assertEquals(1, simpleCatches.size(), "Simple catches should be replaced, not appended");
@@ -340,23 +322,10 @@ class TripIT {
     }
 
     @Test
-    void testEditCatchesKeepsSpecialCatchesAndAllowsMissingImage() {
-        Long tripId = firstTripId();
-        SpecialCatchDto withoutImage = new SpecialCatchDto(someFishId, null, null, null, null, null);
-
-        editCatches(tripId, new EditCatchesDto(List.of(), List.of(withoutImage), List.of()));
-        editCatches(tripId, new EditCatchesDto(List.of(), List.of(withoutImage), List.of()));
-
-        List<SpecialCatchWithIdDto> specialCatches = getCatches(tripId).specialCatches();
-        assertEquals(2, specialCatches.size(), "New special catches should be appended");
-        assertTrue(specialCatches.stream().allMatch(c -> c.imageData() == null));
-    }
-
-    @Test
     void testEditCatchesWithUnknownFish() {
         Long tripId = firstTripId();
         expectEntityNotFound(TestUserAuth.username, catchesUrl(tripId), HttpMethod.PUT,
-            new EditCatchesDto(List.of(new SimpleCatchDto(-1l, 1, Optional.empty())), List.of(), List.of()));
+            new EditCatchesDto(List.of(new SimpleCatchDto(-1l, 1, Optional.empty())), List.of()));
         assertTrue(getCatches(tripId).simpleCatches().isEmpty());
     }
 

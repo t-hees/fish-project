@@ -3,17 +3,28 @@ package com.tadeo.fish_project.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
+import com.tadeo.fish_project.dto.SpecialCatchDto;
 import com.tadeo.fish_project.exception.ApiError;
 import com.tadeo.fish_project.repository.FishRepository;
 import com.tadeo.fish_project.repository.TripRepository;
@@ -68,6 +79,40 @@ public class TestUtils {
     public <RetType> RetType exchangeRest(String url, HttpMethod method,
             ParameterizedTypeReference<RetType> typeReference, HttpStatus expectedStatus, String errorMessage) {
         return exchangeRest(url, method, typeReference, null, expectedStatus, errorMessage);
+    }
+
+    /*
+    Encodes a small image in the given ImageIO format (e.g. "png")
+    */
+    public static byte[] encodedImage(String format) {
+        BufferedImage image = new BufferedImage(20, 10, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(image, format, output);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return output.toByteArray();
+    }
+
+    /*
+    Multipart body for creating a special catch, image may be null for a catch without image
+    */
+    public static MultiValueMap<String, Object> specialCatchParts(SpecialCatchDto dto, byte[] image) {
+        MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
+        HttpHeaders jsonHeaders = new HttpHeaders();
+        jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
+        parts.add("catch", new HttpEntity<>(dto, jsonHeaders));
+        if (image != null) {
+            // Only parts with a file name are received as files
+            parts.add("image", new ByteArrayResource(image) {
+                @Override
+                public String getFilename() {
+                    return "photo";
+                }
+            });
+        }
+        return parts;
     }
 
     /*

@@ -4,9 +4,8 @@ import ItemAutocomplete from "../components/ItemAutocomplete";
 import { useCallback, useEffect, useState } from "react";
 import { Loading } from "../components/Loading";
 import { fetchApi } from "../util/fetchApi";
-import { encodeImage } from "../util/imageUtil";
-import type { SimpleFish, SimpleCatchDto, SpecialCatchDto, SpecialCatchWithIdDto, EditCatchesDto, AllCatchesDto } from "../components/api/FishCatch";
-import { SpecialCatchList } from "../components/api/FishCatch";
+import type { SimpleFish, SimpleCatchDto, SpecialCatchDto, SpecialCatchWithIdDto, EditCatchesDto, AllCatchesDto, NewSpecialCatch } from "../components/api/FishCatch";
+import { MAX_IMAGE_BYTES, SpecialCatchList } from "../components/api/FishCatch";
 
 export default function EditCatch() {
   return (
@@ -14,10 +13,26 @@ export default function EditCatch() {
   )
 }
 
+/**
+ * The multipart body creating a special catch, see SpecialCatchController in the backend
+ */
+function toFormData(newCatch: NewSpecialCatch): FormData {
+  const specialCatch: SpecialCatchDto = {
+    fishId: newCatch.fishId,
+    size: newCatch.size,
+    weight: newCatch.weight,
+    notes: newCatch.notes,
+  };
+  const form = new FormData();
+  form.append("catch", new Blob([JSON.stringify(specialCatch)], { type: "application/json" }));
+  if (newCatch.image) form.append("image", newCatch.image);
+  return form;
+}
+
 function Catch({ setError, setNotification }: NotifiableContentContext) {
   const tripId: number = Number(new URLSearchParams(useLocation().search).get("id"));
   const [simpleCatches, setSimpleCatches] = useState<SimpleCatchDto[]>([]);
-  const [specialCatches, setSpecialCatches] = useState<SpecialCatchDto[]>([]);
+  const [specialCatches, setSpecialCatches] = useState<NewSpecialCatch[]>([]);
   const [oldSpecialCatches, setOldSpecialCatches] = useState<SpecialCatchWithIdDto[]>([]);
   const [removableSpecialCatchIds, setRemovableSpecialCatchIds] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -49,26 +64,63 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
   }
 
   // By position, as there can be several detailed catches of the same fish
-  const updateSpecialCatches = (index: number, upFunc: (dto: SpecialCatchDto) => SpecialCatchDto) => {
+  const updateSpecialCatches = (index: number, upFunc: (dto: NewSpecialCatch) => NewSpecialCatch) => {
     const updatedValues = specialCatches.map((sCatch, idx) => (idx === index)
       ? upFunc(sCatch)
       : sCatch);
     setSpecialCatches(updatedValues);
   }
 
-  const submitFish = () => {
-    const data: EditCatchesDto = {
-      simpleCatches: simpleCatches,
-      newSpecialCatches: specialCatches,
-      removableSpecialCatchIds: removableSpecialCatchIds,
+  const selectImage = (index: number, image: File | undefined) => {
+    if (image && image.size > MAX_IMAGE_BYTES) {
+      setError(`Das Foto ist größer als ${MAX_IMAGE_BYTES / 1024 / 1024} MB`);
+      return;
+    }
+    updateSpecialCatches(index, (dto) => {
+      if (dto.previewUrl) URL.revokeObjectURL(dto.previewUrl);
+      return {...dto, image: image ?? null, previewUrl: image ? URL.createObjectURL(image) : null};
+    });
+  }
+
+  /*
+  Saves the simple catches and removals first, then uploads the new special catches one by one with their image.
+  New catches that couldn't be saved stay in the form, so nothing entered is lost.
+  */
+  const submitFish = async () => {
+    let failed = false;
+    const handleError = (error: string | null) => {
+      failed = true;
+      setError(error);
     };
     setLoading(true);
-    // The response holds the saved catches, the submitted new catches are among the saved ones now
-    fetchApi(catchesPath, "PUT", async (response) => {
-        await showSavedCatches(response);
-        setNotification("Fänge gespeichert");
-      },
-      setError, setLoading, data)
+    setError(null);
+
+    const data: EditCatchesDto = {
+      simpleCatches: simpleCatches,
+      removableSpecialCatchIds: removableSpecialCatchIds,
+    };
+    await fetchApi(catchesPath, "PUT", () => {}, handleError, () => {}, data);
+    if (failed) {
+      setLoading(false);
+      return;
+    }
+
+    const unsavedCatches: NewSpecialCatch[] = [];
+    for (const newCatch of specialCatches) {
+      if (!failed) {
+        await fetchApi(`trips/${tripId}/special-catches`, "POST", () => {}, handleError, () => {},
+          toFormData(newCatch));
+      }
+      if (failed) {
+        unsavedCatches.push(newCatch);
+      } else if (newCatch.previewUrl) {
+        URL.revokeObjectURL(newCatch.previewUrl);
+      }
+    }
+
+    await fetchApi(catchesPath, "GET", showSavedCatches, handleError, setLoading);
+    setSpecialCatches(unsavedCatches);
+    if (unsavedCatches.length === 0) setNotification("Fänge gespeichert");
   }
 
   const deleteSpecialCatchButton = (fish: SpecialCatchWithIdDto) => {
@@ -124,7 +176,8 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
           onSelect={(fish: SimpleFish) => setSpecialCatches([...specialCatches, {
               name: fish.commonName,
               fishId: fish.id,
-              imageData: null,
+              image: null,
+              previewUrl: null,
               size: null,
               weight: null,
               notes: null,
@@ -138,13 +191,13 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
             <li className="entry-list-item" key={index}>
               <h3>{fish.name}</h3>
               <label className="form-label">Foto</label>
-              {fish.imageData &&
-                <img src={fish.imageData} alt="Fish Foto"/>
+              {fish.previewUrl &&
+                <img src={fish.previewUrl} alt={`Foto ${fish.name}`}/>
               }
               <input
                 type="file"
-                accept="image/*"
-                onChange={(e) => e.target.files && encodeImage(e.target.files[0], (image) => updateSpecialCatches(index,(dto) => {return {...dto, imageData: image}}))}
+                accept="image/jpeg,image/png"
+                onChange={(e) => selectImage(index, e.target.files?.[0])}
               />
               <label className="form-label">Größe</label>
               <input

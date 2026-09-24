@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { createTrip, field, login, register, registerAndLogin, selectFish, tripCard, uniqueUser } from './helpers';
 
+const onePixelPng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+
 test('register and login', async ({ page }) => {
   const user = uniqueUser();
   await register(page, user);
@@ -50,6 +53,26 @@ test('edit the catches of a trip', async ({ page }) => {
   await expect(simpleCatch.locator('td').nth(1)).toHaveText('2');
   await expect(card.locator('.entry-list-item h3')).toHaveText('Conger conger');
   await expect(card.getByText('Größe: 80')).toBeVisible();
+});
+
+test('upload a photo of a catch', async ({ page }) => {
+  await registerAndLogin(page);
+  await createTrip(page, 'Photo Lake', '2026-05-02T08:00');
+  const card = tripCard(page, 'Photo Lake');
+  await card.locator('.trip-card-header').click();
+  await card.getByRole('button', { name: 'Fischliste bearbeiten' }).click();
+
+  await selectFish(page, 1, 'Meeraal', 'Meeraal (Conger conger)');
+  await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: onePixelPng });
+  await page.getByRole('button', { name: 'Absenden' }).click();
+  await expect(page.getByText('Fänge gespeichert')).toBeVisible();
+
+  // Loaded from the api with the auth cookie, a failed request would leave the image without size
+  await page.getByRole('button', { name: 'HOME' }).click();
+  await card.locator('.trip-card-header').click();
+  const photo = card.getByAltText('Foto Conger conger');
+  await expect(photo).toBeVisible();
+  await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1);
 });
 
 test('search filters the trip list', async ({ page }) => {

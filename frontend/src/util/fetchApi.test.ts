@@ -29,6 +29,22 @@ describe("fetchApi", () => {
     });
   });
 
+  it("sends form data as multipart", async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(jsonResponse({})));
+    vi.stubGlobal("fetch", fetchMock);
+    const form = new FormData();
+    form.append("image", new Blob(["data"]), "photo.png");
+
+    await fetchApi("trips/1/special-catches", "POST", vi.fn(), vi.fn(), vi.fn(), form);
+
+    expect(fetchMock).toHaveBeenCalledWith(apiPath + "trips/1/special-catches", {
+      method: "POST",
+      credentials: "include",
+      headers: undefined,
+      body: form,
+    });
+  });
+
   it("passes successful responses on and stops loading", async () => {
     const response = jsonResponse({ trips: [] });
     const { done, handleResponse, handleError, handleLoading } = callFetchApi(response);

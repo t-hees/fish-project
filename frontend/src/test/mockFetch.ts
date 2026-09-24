@@ -4,6 +4,12 @@ export const apiPath = "/api/";
 
 type MockRoute = (body: unknown) => Response;
 
+// Json bodies are parsed, FormData is kept as is
+function parseBody(body: RequestInit["body"]): unknown {
+  if (body instanceof FormData) return body;
+  return body ? JSON.parse(body as string) : undefined;
+}
+
 export function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 }
@@ -29,17 +35,18 @@ export function mockFetch(routes: Record<string, MockRoute>) {
       return relPath.startsWith(path) && (!method || method === (init?.method ?? "GET"));
     });
     if (!route) throw new Error(`Unexpected request: ${init?.method} ${url}`);
-    return routes[route](init?.body ? JSON.parse(init.body as string) : undefined);
+    return routes[route](parseBody(init?.body));
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
 
 /**
- * Returns the parsed json bodies (undefined without body) of all requests sent to the given relative api path
+ * Returns the bodies (parsed json, FormData or undefined without body) of all requests sent to the given
+ * relative api path
  */
 export function requestBodies(fetchMock: ReturnType<typeof mockFetch>, relPath: string, method?: string): unknown[] {
   return fetchMock.mock.calls
     .filter(([url, init]) => url === apiPath + relPath && (!method || init?.method === method))
-    .map(([, init]) => init?.body ? JSON.parse(init.body as string) : undefined);
+    .map(([, init]) => parseBody(init?.body));
 }

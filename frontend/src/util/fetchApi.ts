@@ -12,17 +12,21 @@ type ApiError = {
 // Relative, the serving nginx (or the vite dev server) proxies /api to the backend
 const apiPath = "/api/";
 
+/**
+ * @param body Sent as json, or as multipart/form-data for FormData
+ */
 export async function fetchApi(relPath: string, method: FetchMethod,
   handleResponse: (arg0: Response) => void, handleError: (arg0: string | null) => void,
-  handleLoading: (arg0: boolean) => void, body?: JsonBody): Promise<void> {
+  handleLoading: (arg0: boolean) => void, body?: JsonBody | FormData): Promise<void> {
 
-  const jsonBody = body ? JSON.stringify(body) : undefined;
-  const requestHeaders = body ? {"Content-Type": "application/json"} : undefined;
+  const isJson = body !== undefined && !(body instanceof FormData);
+  // FormData bodies get their multipart content type with boundary from fetch itself
+  const requestHeaders = isJson ? {"Content-Type": "application/json"} : undefined;
   return fetch(apiPath + relPath, {
     method: method,
     credentials: "include",
     headers: requestHeaders,
-    body: jsonBody,
+    body: isJson ? JSON.stringify(body) : body,
   })
     .then(async response =>  {
     if (!response.ok) {

@@ -3,10 +3,12 @@ package com.tadeo.fish_project.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -19,8 +21,10 @@ import com.tadeo.fish_project.entity.SpecialCatch;
 import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.entity.User;
 import com.tadeo.fish_project.exception.FishNotFoundException;
+import com.tadeo.fish_project.exception.ImageNotFoundException;
 import com.tadeo.fish_project.exception.TripNotFoundException;
 import com.tadeo.fish_project.entity.Image;
+import com.tadeo.fish_project.dto.SpecialCatchDto;
 import com.tadeo.fish_project.dto.TripDto;
 import com.tadeo.fish_project.dto.TripPageDto;
 import com.tadeo.fish_project.dto.TripReturnDto;
@@ -41,6 +45,7 @@ public class TripService {
     private final SpecialCatchRepository specialCatchRepository;
     private final UserService userService;
     private final FishService fishSerice;
+    private final ImageService imageService;
 
     public TripReturnDto createTrip(TripDto tripDto) {
         User user = userService.getUser();
@@ -80,38 +85,48 @@ public class TripService {
                 .build();
         }).collect(Collectors.toSet());
 
-        List<SpecialCatch> newSpecialCatches = editCatchesDto.newSpecialCatches().stream().map((dto) -> {
-            Fish fish = fishSerice.findById(dto.fishId())
-                .orElseThrow(() -> new FishNotFoundException(dto.fishId()));
-
-            Image image = null;
-            if (dto.imageData() != null) {
-                image = new Image();
-                image.setBase64Image(dto.imageData());
-            }
-
-            return SpecialCatch.builder()
-                .fish(fish)
-                .image(image)
-                .size(dto.size())
-                .weight(dto.weight())
-                .notes(dto.notes())
-                .build();
-        }).toList();
-
         for (SpecialCatch specialCatch : specialCatchRepository.findAllById(editCatchesDto.removableSpecialCatchIds())) {
             trip.getSpecialCatches().remove(specialCatch);
         }
         trip.getSimpleCatches().clear();
         trip.getSimpleCatches().addAll(simpleCatches);
-        trip.getSpecialCatches().addAll(newSpecialCatches);
         // This works because of persistence cascade
         tripRepository.save(trip);
     }
 
+    /*
+    image may be null for a catch without image
+    */
+    public SpecialCatchWithIdDto createSpecialCatch(Long tripId, SpecialCatchDto dto, MultipartFile image) {
+        Trip trip = findOwnTrip(tripId);
+        Fish fish = fishSerice.findById(dto.fishId())
+            .orElseThrow(() -> new FishNotFoundException(dto.fishId()));
+
+        SpecialCatch specialCatch = specialCatchRepository.save(SpecialCatch.builder()
+            .fish(fish)
+            .image((image != null && !image.isEmpty()) ? imageService.createImage(image) : null)
+            .size(dto.size())
+            .weight(dto.weight())
+            .notes(dto.notes())
+            .build());
+        trip.getSpecialCatches().add(specialCatch);
+        tripRepository.save(trip);
+        return toSpecialCatchDto(tripId, specialCatch);
+    }
+
+    /*
+    The catch has to belong to a trip of the authenticated user
+    */
+    public Image getSpecialCatchImage(Long tripId, Long catchId) {
+        return findOwnTrip(tripId).getSpecialCatches().stream()
+            .filter(specialCatch -> specialCatch.getId().equals(catchId))
+            .findFirst()
+            .map(SpecialCatch::getImage)
+            .orElseThrow(() -> new ImageNotFoundException(catchId));
+    }
+
     public AllCatchesDto getAllCatches(Long tripId) {
-        Trip trip = tripRepository.findByIdAndUser(tripId, userService.getUser())
-            .orElseThrow(() -> new TripNotFoundException(tripId));
+        Trip trip = findOwnTrip(tripId);
 
         List<SimpleCatchDto> simpleCatches = trip.getSimpleCatches().stream()
             .map(simpleCatch -> new SimpleCatchDto(
@@ -122,15 +137,8 @@ public class TripService {
             .collect(Collectors.toList());
 
         List<SpecialCatchWithIdDto> specialCatches = trip.getSpecialCatches().stream()
-            .map(specialCatch -> new SpecialCatchWithIdDto(
-                specialCatch.getId(),
-                specialCatch.getFish().getId(),
-                (specialCatch.getImage() != null) ? specialCatch.getImage().getBase64Image() : null,
-                specialCatch.getSize(),
-                specialCatch.getWeight(),
-                specialCatch.getNotes(),
-                specialCatch.getFish().getScientificName()
-            ))
+            .sorted(Comparator.comparing(SpecialCatch::getId))
+            .map(specialCatch -> toSpecialCatchDto(tripId, specialCatch))
             .collect(Collectors.toList());
 
         return new AllCatchesDto(simpleCatches, specialCatches);
@@ -149,6 +157,25 @@ public class TripService {
             .map(TripService::toReturnDto)
             .collect(Collectors.toList());
         return new TripPageDto(trips, tripPage.hasNext(), tripPage.getTotalElements());
+    }
+
+    private Trip findOwnTrip(Long tripId) {
+        return tripRepository.findByIdAndUser(tripId, userService.getUser())
+            .orElseThrow(() -> new TripNotFoundException(tripId));
+    }
+
+    private static SpecialCatchWithIdDto toSpecialCatchDto(Long tripId, SpecialCatch specialCatch) {
+        // Checks the id only, so the lazy image itself isn't loaded
+        boolean hasImage = specialCatch.getImage() != null;
+        return new SpecialCatchWithIdDto(
+            specialCatch.getId(),
+            specialCatch.getFish().getId(),
+            hasImage ? "/api/trips/" + tripId + "/special-catches/" + specialCatch.getId() + "/image" : null,
+            specialCatch.getSize(),
+            specialCatch.getWeight(),
+            specialCatch.getNotes(),
+            specialCatch.getFish().getScientificName()
+        );
     }
 
     private static TripReturnDto toReturnDto(Trip trip) {

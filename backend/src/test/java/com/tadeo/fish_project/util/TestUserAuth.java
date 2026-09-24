@@ -8,8 +8,11 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 
 import com.tadeo.fish_project.exception.ApiError;
 import com.tadeo.fish_project.repository.UserRepository;
@@ -66,6 +69,13 @@ public class TestUserAuth {
             ParameterizedTypeReference<RetType> typeReference, Object data, HttpStatus expectedStatus,
             String errorMessage) {
         return exchangeRestAs(username, url, method, typeReference, data, expectedStatus, errorMessage);
+    }
+
+    public <RetType> ResponseEntity<RetType> postMultipartAs(String name, String url,
+            MultiValueMap<String, Object> parts, ParameterizedTypeReference<RetType> typeReference) {
+        HttpHeaders headers = authHeadersFor(name);
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        return testUtils.exchange(url, HttpMethod.POST, typeReference, parts, headers);
     }
 
     public void exchangeNoContentWithAuth(String url, HttpMethod method, Object data, String errorMessage) {

@@ -15,6 +15,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -49,6 +51,11 @@ public class GlobalExceptionHandler {
         return buildError("ENTITY_NOT_FOUND", ex.getMessage(), request, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(InvalidImageException.class)
+    public ResponseEntity<ApiError> handleInvalidImageException(InvalidImageException ex, HttpServletRequest request) {
+        return buildError("UNSUPPORTED_IMAGE", ex.getMessage(), request, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = ex.getBindingResult().getFieldErrors().stream()
@@ -68,9 +75,11 @@ public class GlobalExceptionHandler {
         return buildError("MALFORMED_REQUEST", "Invalid value for " + ex.getName(), request, HttpStatus.BAD_REQUEST);
     }
 
-    // Spring's own errors like unknown paths (404), wrong methods (405) or missing parameters (400)
+    // Spring's own errors like unknown paths (404), wrong methods (405), missing parameters (400)
+    // or too large uploads (413)
     @ExceptionHandler({NoResourceFoundException.class, HttpRequestMethodNotSupportedException.class,
-        HttpMediaTypeNotSupportedException.class, MissingServletRequestParameterException.class})
+        HttpMediaTypeNotSupportedException.class, MissingServletRequestParameterException.class,
+        MissingServletRequestPartException.class, MaxUploadSizeExceededException.class})
     public ResponseEntity<ApiError> handleSpringErrorResponse(Exception ex, HttpServletRequest request) {
         ErrorResponse errorResponse = (ErrorResponse) ex;
         HttpStatus status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
