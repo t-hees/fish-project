@@ -90,6 +90,8 @@ public class Trip {
     @NotNull
     private String location;
 
+    // By name, an ordinal would silently change meaning if the enum was reordered
+    @Enumerated(EnumType.STRING)
     private Environment environment;
 
     @NotNull

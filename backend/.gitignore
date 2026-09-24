@@ -33,3 +33,5 @@ build/
 .vscode/
 
 *.sql
+# Flyway migrations are source code
+!src/main/resources/db/migration/*.sql
