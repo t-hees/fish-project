@@ -22,13 +22,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.tadeo.fish_project.dto.AllCatchesDto;
 import com.tadeo.fish_project.dto.EditCatchesDto;
+import com.tadeo.fish_project.dto.PasswordDto;
 import com.tadeo.fish_project.dto.SimpleCatchDto;
 import com.tadeo.fish_project.dto.SpecialCatchDto;
-import com.tadeo.fish_project.dto.StringDto;
 import com.tadeo.fish_project.dto.TripDto;
-import com.tadeo.fish_project.dto.TripPageDto;
+import com.tadeo.fish_project.dto.TripReturnDto;
 import com.tadeo.fish_project.dto.UserDto;
+import com.tadeo.fish_project.dto.UserInfoDto;
 import com.tadeo.fish_project.dto.UserPasswordDto;
 import com.tadeo.fish_project.entity.Trip;
 import com.tadeo.fish_project.exception.ApiError;
@@ -62,34 +64,41 @@ class UserIT {
     @Autowired
     JwtUtil jwtUtil;
 
+    private static final String currentUserUrl = "/api/users/me";
+
     private final UserDto userDto = new UserDto("john", "strongpass");
 
-    private ResponseEntity<String> post(String url, Object data, HttpHeaders headers) {
-        return testUtils.exchange(url, HttpMethod.POST, new ParameterizedTypeReference<String>() {}, data, headers);
+    private ResponseEntity<String> exchange(String url, HttpMethod method, Object data, HttpHeaders headers) {
+        return testUtils.exchange(url, method, new ParameterizedTypeReference<String>() {}, data, headers);
     }
 
-    private ResponseEntity<String> getUsername(HttpHeaders headers) {
-        return testUtils.exchange("/api/user/name", HttpMethod.GET,
-            new ParameterizedTypeReference<String>() {}, null, headers);
+    private HttpStatus getCurrentUserStatus(HttpHeaders headers) {
+        return HttpStatus.valueOf(exchange(currentUserUrl, HttpMethod.GET, null, headers).getStatusCode().value());
     }
 
-    private ResponseEntity<String> performLogin(UserDto userDto) {
-        return post("/api/user/login", userDto, new HttpHeaders());
+    private ResponseEntity<UserInfoDto> performLogin(UserDto userDto) {
+        return testUtils.exchange("/api/auth/login", HttpMethod.POST,
+            new ParameterizedTypeReference<UserInfoDto>() {}, userDto, new HttpHeaders());
     }
 
     /*
     Logs in through the API and returns headers carrying the returned auth cookie
     */
     private HttpHeaders performLoginAndGetHeaders(UserDto userDto) {
-        ResponseEntity<String> response = performLogin(userDto);
-        assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+        ResponseEntity<UserInfoDto> response = performLogin(userDto);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        return cookieHeadersOf(response);
+    }
+
+    private static HttpHeaders cookieHeadersOf(ResponseEntity<?> response) {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add(HttpHeaders.COOKIE, response.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
         return httpHeaders;
     }
 
-    private ApiError expectAuthFail(String url, Object data, HttpHeaders headers, String errorMessage) {
-        ApiError error = testUtils.exchangeError(url, HttpMethod.POST, data, headers,
+    private ApiError expectAuthFail(String url, HttpMethod method, Object data, HttpHeaders headers,
+            String errorMessage) {
+        ApiError error = testUtils.exchangeError(url, method, data, headers,
             HttpStatus.UNAUTHORIZED, errorMessage);
         assertEquals("AUTH_FAIL", error.code());
         return error;
@@ -104,8 +113,9 @@ class UserIT {
     @BeforeEach
     void initUser() {
         testUtils.cleanDatabase();
-        ResponseEntity<String> response = post("/api/user/register", userDto, new HttpHeaders());
-        assertEquals(HttpStatus.CREATED, response.getStatusCode(), response.getBody());
+        UserInfoDto created = testUtils.exchangeRest("/api/auth/register", HttpMethod.POST,
+            new ParameterizedTypeReference<UserInfoDto>() {}, userDto, HttpStatus.CREATED, "Failed to register");
+        assertEquals(userDto.username(), created.username());
     }
 
     @Test
@@ -118,7 +128,7 @@ class UserIT {
 
     @Test
     void testCreateDuplicateUser() {
-        ApiError error = testUtils.exchangeError("/api/user/register", HttpMethod.POST, userDto, new HttpHeaders(),
+        ApiError error = testUtils.exchangeError("/api/auth/register", HttpMethod.POST, userDto, new HttpHeaders(),
             HttpStatus.CONFLICT, "Duplicate username should be rejected");
         assertEquals("USERNAME_TAKEN", error.code());
         assertEquals(1, userRepository.count());
@@ -126,52 +136,54 @@ class UserIT {
 
     @Test
     void testCreateUserWithInvalidCredentials() {
-        expectValidationFail("/api/user/register", new UserDto(null, "longenough"),
+        expectValidationFail("/api/auth/register", new UserDto(null, "longenough"),
             "Missing username should be rejected");
-        expectValidationFail("/api/user/register", new UserDto("name", null),
+        expectValidationFail("/api/auth/register", new UserDto("name", null),
             "Missing password should be rejected");
-        expectValidationFail("/api/user/register", new UserDto("name", "short"),
+        expectValidationFail("/api/auth/register", new UserDto("name", "short"),
             "Too short password should be rejected");
         assertEquals(1, userRepository.count());
     }
 
     @Test
     void testLogin() {
-        ApiError wrongPassword = expectAuthFail("/api/user/login",
+        ApiError wrongPassword = expectAuthFail("/api/auth/login", HttpMethod.POST,
             new UserDto(userDto.username(), userDto.password() + "f"),
             new HttpHeaders(), "Login with wrong password should fail");
-        ApiError unknownUser = expectAuthFail("/api/user/login", new UserDto("unknown", userDto.password()),
-            new HttpHeaders(), "Login of unknown user should fail");
+        ApiError unknownUser = expectAuthFail("/api/auth/login", HttpMethod.POST,
+            new UserDto("unknown", userDto.password()), new HttpHeaders(), "Login of unknown user should fail");
         assertEquals(wrongPassword.message(), unknownUser.message(),
             "Login errors shouldn't reveal whether a username exists");
 
-        ResponseEntity<String> response = performLogin(userDto);
-        assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+        ResponseEntity<UserInfoDto> response = performLogin(userDto);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(userDto.username(), response.getBody().username());
         String cookie = response.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
         assertTrue(cookie != null && cookie.startsWith("AUTH_TOKEN="), "Login didn't set auth cookie");
         assertTrue(cookie.contains("HttpOnly"), "Auth cookie must be HttpOnly");
     }
 
     @Test
-    void testGetUsername() {
-        ResponseEntity<String> response = getUsername(performLoginAndGetHeaders(userDto));
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(userDto.username(), response.getBody());
+    void testGetCurrentUser() {
+        UserInfoDto user = testUtils.exchangeRest(currentUserUrl, HttpMethod.GET,
+            new ParameterizedTypeReference<UserInfoDto>() {}, null, performLoginAndGetHeaders(userDto),
+            HttpStatus.OK, "Failed to get current user");
+        assertEquals(userDto.username(), user.username());
     }
 
     @Test
     void testProtectedEndpointsRequireAuth() {
-        assertEquals(HttpStatus.UNAUTHORIZED, getUsername(new HttpHeaders()).getStatusCode());
-        assertEquals(HttpStatus.UNAUTHORIZED, testUtils.exchange("/api/trip/all", HttpMethod.GET,
-            new ParameterizedTypeReference<String>() {}, null, new HttpHeaders()).getStatusCode());
-        assertEquals(HttpStatus.UNAUTHORIZED, testUtils.exchange("/api/fish/search_by_common_name?name=aal",
-            HttpMethod.GET, new ParameterizedTypeReference<String>() {}, null, new HttpHeaders()).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, getCurrentUserStatus(new HttpHeaders()));
+        assertEquals(HttpStatus.UNAUTHORIZED,
+            exchange("/api/trips", HttpMethod.GET, null, new HttpHeaders()).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED,
+            exchange("/api/fish?name=aal", HttpMethod.GET, null, new HttpHeaders()).getStatusCode());
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"garbage", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2huIn0.invalidsignature"})
     void testInvalidTokenIsRejected(String token) {
-        assertEquals(HttpStatus.UNAUTHORIZED, getUsername(TestUserAuth.cookieHeaders(token)).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, getCurrentUserStatus(TestUserAuth.cookieHeaders(token)));
     }
 
     @Test
@@ -181,40 +193,46 @@ class UserIT {
         String forgedPayload = java.util.Base64.getUrlEncoder().withoutPadding()
             .encodeToString("{\"sub\":\"admin\"}".getBytes());
         String forged = parts[0] + "." + forgedPayload + "." + parts[2];
-        assertEquals(HttpStatus.UNAUTHORIZED, getUsername(TestUserAuth.cookieHeaders(forged)).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, getCurrentUserStatus(TestUserAuth.cookieHeaders(forged)));
     }
 
     @Test
     void testTokenOfDeletedUserIsRejected() {
         String token = jwtUtil.generateToken("ghost");
-        assertEquals(HttpStatus.UNAUTHORIZED, getUsername(TestUserAuth.cookieHeaders(token)).getStatusCode());
+        assertEquals(HttpStatus.UNAUTHORIZED, getCurrentUserStatus(TestUserAuth.cookieHeaders(token)));
+    }
+
+    @Test
+    void testLogoutWorksWithoutValidToken() {
+        ResponseEntity<String> response = testUtils.exchangeNoContent("/api/auth/logout", HttpMethod.POST, null,
+            TestUserAuth.cookieHeaders("garbage"), "Logout should always clear the cookie");
+        assertTrue(response.getHeaders().getFirst(HttpHeaders.SET_COOKIE).contains("Max-Age=0"));
     }
 
     @Test
     void testChangePasswordWithRelogin() {
         HttpHeaders httpHeaders = performLoginAndGetHeaders(userDto);
         String newPass = "newpassword";
+        String passwordUrl = currentUserUrl + "/password";
 
         // Change password
-        expectAuthFail("/api/user/change-password", new UserPasswordDto(userDto.password() + "fail", newPass),
+        expectAuthFail(passwordUrl, HttpMethod.PUT, new UserPasswordDto(userDto.password() + "fail", newPass),
             httpHeaders, "Changing password with wrong old password should fail");
-        ResponseEntity<String> response = post("/api/user/change-password",
-            new UserPasswordDto(userDto.password(), newPass), httpHeaders);
-        assertEquals(HttpStatus.OK, response.getStatusCode(), response.getBody());
+        testUtils.exchangeNoContent(passwordUrl, HttpMethod.PUT, new UserPasswordDto(userDto.password(), newPass),
+            httpHeaders, "Failed to change password");
 
         // Logout
-        response = post("/api/user/logout", null, httpHeaders);
-        assertEquals(HttpStatus.OK, response.getStatusCode(), "Failed to logout");
-        HttpHeaders loggedOutHeaders = new HttpHeaders();
-        loggedOutHeaders.add(HttpHeaders.COOKIE, response.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
+        ResponseEntity<String> response = testUtils.exchangeNoContent("/api/auth/logout", HttpMethod.POST, null,
+            httpHeaders, "Failed to logout");
         assertEquals(
             HttpStatus.UNAUTHORIZED,
-            getUsername(loggedOutHeaders).getStatusCode(),
+            getCurrentUserStatus(cookieHeadersOf(response)),
             "Non-authorized access should be rejected after logout"
         );
 
         // Login again
-        expectAuthFail("/api/user/login", userDto, new HttpHeaders(), "Login with old password is expected to fail");
+        expectAuthFail("/api/auth/login", HttpMethod.POST, userDto, new HttpHeaders(),
+            "Login with old password is expected to fail");
         performLoginAndGetHeaders(new UserDto(userDto.username(), newPass));
     }
 
@@ -222,33 +240,31 @@ class UserIT {
     void testDelete() {
         HttpHeaders httpHeaders = performLoginAndGetHeaders(userDto);
 
-        expectAuthFail("/api/user/delete", new StringDto(userDto.password() + "fail"), httpHeaders,
+        expectAuthFail(currentUserUrl, HttpMethod.DELETE, new PasswordDto(userDto.password() + "fail"), httpHeaders,
             "Expected to fail user deletion with false password");
-        ResponseEntity<String> response = post("/api/user/delete", new StringDto(userDto.password()), httpHeaders);
-        assertEquals(HttpStatus.OK, response.getStatusCode(), "Failed user deletion" + response.getBody());
+        ResponseEntity<String> response = testUtils.exchangeNoContent(currentUserUrl, HttpMethod.DELETE,
+            new PasswordDto(userDto.password()), httpHeaders, "Failed user deletion");
         assertFalse(userRepository.findByUsername(userDto.username()).isPresent());
+        assertTrue(response.getHeaders().getFirst(HttpHeaders.SET_COOKIE).contains("Max-Age=0"),
+            "Deleting the account should clear the auth cookie");
     }
 
     @Test
     void testDeleteUserWithTrips() {
         Long fishId = testFishUtils.initializeTestFish();
-        testUserAuth.exchangeRestWithAuth("/api/trip/create", HttpMethod.POST,
-            new ParameterizedTypeReference<String>() {},
+        Long tripId = testUserAuth.exchangeRestWithAuth("/api/trips", HttpMethod.POST,
+            new ParameterizedTypeReference<TripReturnDto>() {},
             new TripDto("lake", Trip.Environment.LAKE, LocalDateTime.of(2026, 4, 5, 6, 30),
                 null, null, null, Set.of(), null),
-            HttpStatus.CREATED, "Failed to create trip");
-        Long tripId = testUserAuth.exchangeRestWithAuth("/api/trip/all", HttpMethod.GET,
-            new ParameterizedTypeReference<TripPageDto>() {}, null, HttpStatus.OK, "Failed to get trips")
-            .trips().getFirst().id();
-        testUserAuth.exchangeRestWithAuth("/api/trip/edit-catches", HttpMethod.POST,
-            new ParameterizedTypeReference<String>() {},
-            new EditCatchesDto(tripId, List.of(new SimpleCatchDto(fishId, 1, Optional.empty())),
+            HttpStatus.CREATED, "Failed to create trip").id();
+        testUserAuth.exchangeRestWithAuth("/api/trips/" + tripId + "/catches", HttpMethod.PUT,
+            new ParameterizedTypeReference<AllCatchesDto>() {},
+            new EditCatchesDto(List.of(new SimpleCatchDto(fishId, 1, Optional.empty())),
                 List.of(new SpecialCatchDto(fishId, "data:image/png;base64,AAAA", 1l, 1l, null, null)), List.of()),
             HttpStatus.OK, "Failed to add catches");
 
-        ResponseEntity<String> response = post("/api/user/delete", new StringDto(TestUserAuth.password),
-            testUserAuth.authHeadersFor(TestUserAuth.username));
-        assertEquals(HttpStatus.OK, response.getStatusCode(), "Failed deleting user with trips: " + response.getBody());
+        testUtils.exchangeNoContent(currentUserUrl, HttpMethod.DELETE, new PasswordDto(TestUserAuth.password),
+            testUserAuth.authHeadersFor(TestUserAuth.username), "Failed deleting user with trips");
         assertEquals(0, tripRepository.count(), "Trips of deleted user should be deleted as well");
     }
 }

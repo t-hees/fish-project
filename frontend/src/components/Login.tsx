@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchApi } from "../util/fetchApi";
 import { Loading } from "./Loading";
 import type { NotifiableContentContext } from "./NotifiableContainer";
-import { AuthContext } from "../util/AuthContext";
+import { AuthContext, type UserInfo } from "../util/AuthContext";
 
 export const Login = ({ setError }: NotifiableContentContext) => {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export const Login = ({ setError }: NotifiableContentContext) => {
   const requestLogin: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
     setLoading(true);
-    const relPath = "user/login";
+    const relPath = "auth/login";
     const jsonBody = {
       username: username,
       password: password,
@@ -24,8 +24,8 @@ export const Login = ({ setError }: NotifiableContentContext) => {
   }
 
   const handleResponse = async (response: Response) => {
-    const username = await response.text();
-    authContext.setName(username);
+    const user: UserInfo = await response.json();
+    authContext.setName(user.username);
     navigate("/");
   }
 

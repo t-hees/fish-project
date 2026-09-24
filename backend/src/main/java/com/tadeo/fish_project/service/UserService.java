@@ -8,8 +8,6 @@ import com.tadeo.fish_project.repository.TripRepository;
 import com.tadeo.fish_project.repository.UserRepository;
 import com.tadeo.fish_project.util.JwtUtil;
 
-import java.util.Optional;
-
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -82,14 +80,6 @@ public class UserService implements UserDetailsService {
             throw new UserCredentialsException("Password doesn't match authenticated user: " + user.getUsername());
         }
         return user;
-    }
-
-    public Optional<String> getUsername() {
-        if (SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
-            String userName = SecurityContextHolder.getContext().getAuthentication().getName();
-            return Optional.of(userName);
-        }
-        return Optional.empty();
     }
 
     public User getUser() {

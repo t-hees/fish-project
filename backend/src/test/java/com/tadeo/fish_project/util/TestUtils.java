@@ -71,6 +71,17 @@ public class TestUtils {
     }
 
     /*
+    Performs a request that is expected to succeed with 204 and returns the response for its headers
+    */
+    public ResponseEntity<String> exchangeNoContent(String url, HttpMethod method, Object data, HttpHeaders headers,
+            String errorMessage) {
+        ResponseEntity<String> response = exchange(url, method, new ParameterizedTypeReference<String>() {},
+            data, headers);
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode(), errorMessage + ": " + response.getBody());
+        return response;
+    }
+
+    /*
     Performs a request that is expected to be rejected by GlobalExceptionHandler and returns the error body
     */
     public ApiError exchangeError(String url, HttpMethod method, Object data, HttpHeaders headers,

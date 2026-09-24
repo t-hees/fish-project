@@ -17,7 +17,7 @@ export const Register = ({ setNotification, setError }: NotifiableContentContext
       return;
     }
     setLoading(true);
-    const relPath = "user/register";
+    const relPath = "auth/register";
     const jsonBody = {
       username: username,
       password: password,

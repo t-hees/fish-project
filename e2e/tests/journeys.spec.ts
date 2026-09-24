@@ -41,7 +41,7 @@ test('edit the catches of a trip', async ({ page }) => {
   await selectFish(page, 1, 'Meeraal', 'Meeraal (Conger conger)');
   await field(page, 'Größe').fill('80');
   await page.getByRole('button', { name: 'Absenden' }).click();
-  await expect(page.getByText(/^Successfully edited catches of trip: \d+$/)).toBeVisible();
+  await expect(page.getByText('Fänge gespeichert')).toBeVisible();
 
   await page.getByRole('button', { name: 'HOME' }).click();
   await card.locator('.trip-card-header').click();

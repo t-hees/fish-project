@@ -42,8 +42,8 @@ public class SecurityConfig {
             .formLogin(form -> form.disable())
             .authorizeHttpRequests(
                 authorizeRequest -> authorizeRequest
-                    .requestMatchers(
-                        "/api/user/register", "/api/user/login").permitAll()
+                    // Logout only clears the cookie, so it also works with an expired token
+                    .requestMatchers("/api/auth/**").permitAll()
                     .anyRequest().authenticated()
             )
             // Missing or invalid auth cookies are 401 instead of spring security's default 403

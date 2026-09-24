@@ -18,7 +18,7 @@ export default function ItemAutocomplete<T>({ url, onSelect, displayFunc, setErr
 
   useEffect(() => {
     if (debouncedQuery !== "") {
-      fetchApi(url + debouncedQuery, "GET", async (response) => setItemList(await response.json()),
+      fetchApi(url + encodeURIComponent(debouncedQuery), "GET", async (response) => setItemList(await response.json()),
         setError, setLoading)
     }
   }, [debouncedQuery, url, setError])

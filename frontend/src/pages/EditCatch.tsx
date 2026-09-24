@@ -22,21 +22,20 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
   const [removableSpecialCatchIds, setRemovableSpecialCatchIds] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const catchesPath = `trips/${tripId}/catches`;
+
   // Replaces all local edits with the catches as currently saved
-  const loadCatches = useCallback(() => {
-    fetchApi("trip/get-catches", "POST", async (response) => {
-        const savedCatches: AllCatchesDto = await response.json();
-        setSimpleCatches(savedCatches.simpleCatches);
-        setOldSpecialCatches(savedCatches.specialCatches);
-        setSpecialCatches([]);
-        setRemovableSpecialCatchIds([]);
-      },
-      setError, setLoading, {id: tripId})
-  }, [setError, tripId]);
+  const showSavedCatches = useCallback(async (response: Response) => {
+    const savedCatches: AllCatchesDto = await response.json();
+    setSimpleCatches(savedCatches.simpleCatches);
+    setOldSpecialCatches(savedCatches.specialCatches);
+    setSpecialCatches([]);
+    setRemovableSpecialCatchIds([]);
+  }, []);
 
   useEffect(() => {
-    loadCatches();
-  }, [loadCatches]);
+    fetchApi(catchesPath, "GET", showSavedCatches, setError, setLoading)
+  }, [catchesPath, showSavedCatches, setError]);
 
   if (!tripId) return (<h1>ERROR: No trip id parameter provided</h1>);
   if (loading) return <Loading />
@@ -59,17 +58,17 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
 
   const submitFish = () => {
     const data: EditCatchesDto = {
-      tripId: tripId,
       simpleCatches: simpleCatches,
       newSpecialCatches: specialCatches,
       removableSpecialCatchIds: removableSpecialCatchIds,
     };
-    fetchApi("trip/edit-catches", "POST", async (response) => {
-        setNotification(await response.text());
-        // Submitted new catches are saved catches now, keeping them as new ones would save them again
-        loadCatches();
+    setLoading(true);
+    // The response holds the saved catches, the submitted new catches are among the saved ones now
+    fetchApi(catchesPath, "PUT", async (response) => {
+        await showSavedCatches(response);
+        setNotification("Fänge gespeichert");
       },
-      setError, () => {}, data)
+      setError, setLoading, data)
   }
 
   const deleteSpecialCatchButton = (fish: SpecialCatchWithIdDto) => {
@@ -85,7 +84,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
       <div>
         <h2>Einfache Fischeinträge</h2>
         <ItemAutocomplete<SimpleFish>
-          url="fish/search_by_common_name?name="
+          url="fish?name="
           onSelect={(fish: SimpleFish) => (!simpleCatches.some(scatch => scatch.fishId === fish.id))
             && setSimpleCatches([...simpleCatches, {name: fish.commonName, fishId: fish.id, amount: 1}])}
           displayFunc={(fish: SimpleFish) => `${fish.commonName} (${fish.scientificName})`}
@@ -121,7 +120,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
           action={deleteSpecialCatchButton}
         />
         <ItemAutocomplete<SimpleFish>
-          url="fish/search_by_common_name?name="
+          url="fish?name="
           onSelect={(fish: SimpleFish) => setSpecialCatches([...specialCatches, {
               name: fish.commonName,
               fishId: fish.id,

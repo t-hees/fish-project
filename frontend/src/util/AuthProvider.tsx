@@ -1,12 +1,12 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { fetchApi } from './fetchApi.ts'
-import { AuthContext } from "./AuthContext.tsx";
+import { AuthContext, type UserInfo } from "./AuthContext.tsx";
 
 export function AuthProvider({children}: {children: ReactNode}) {
   const [userName, setUserName] = useState<string|null>(null);
 
   const fetchName = useCallback(() => {
-    fetchApi("user/name", "GET", async (response) => setUserName(await response.text()),
+    fetchApi("users/me", "GET", async (response) => setUserName((await response.json() as UserInfo).username),
       (error) => console.error(error), () => {});
   }, []);
 

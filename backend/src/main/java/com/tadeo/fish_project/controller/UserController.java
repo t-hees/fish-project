@@ -1,87 +1,50 @@
 package com.tadeo.fish_project.controller;
 
-import java.time.Duration;
-import java.util.Optional;
-
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.tadeo.fish_project.dto.RegisterDto;
-import com.tadeo.fish_project.dto.StringDto;
-import com.tadeo.fish_project.dto.UserDto;
+import com.tadeo.fish_project.dto.PasswordDto;
+import com.tadeo.fish_project.dto.UserInfoDto;
 import com.tadeo.fish_project.dto.UserPasswordDto;
 import com.tadeo.fish_project.service.UserService;
+import com.tadeo.fish_project.util.AuthCookies;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/*
+The account of the authenticated user
+*/
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users/me")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<String> createUser(@Valid @RequestBody RegisterDto data) {
-        userService.createUser(data.username(), data.password());
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body("Created user: " + data.username());
+    @GetMapping
+    public ResponseEntity<UserInfoDto> getCurrentUser() {
+        return ResponseEntity.ok(new UserInfoDto(userService.getUser().getUsername()));
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@Valid @RequestBody UserDto authRequest) {
-        String token = userService.login(authRequest.username(), authRequest.password());
-
-        ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", token)
-            .httpOnly(true)
-            .secure(true)
-            .path("/")
-            .sameSite("Strict")
-            .maxAge(Duration.ofHours(24))
-            .build();
-
-        return ResponseEntity.ok()
-            .header(HttpHeaders.SET_COOKIE, cookie.toString())
-            .body(authRequest.username());
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<String> logout() {
-        ResponseCookie expiredCookie = ResponseCookie.from("AUTH_TOKEN", "")
-            .path("/")
-            .httpOnly(true)
-            .secure(true)
-            .maxAge(0)
-            .sameSite("Strict")
-            .build();
-
-        return ResponseEntity.ok()
-            .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
-            .body("Logged out");
-    }
-
-    @PostMapping("/change-password")
-    public ResponseEntity<String> changePassword(@Valid @RequestBody UserPasswordDto userPasswordDto) {
+    @PutMapping("/password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody UserPasswordDto userPasswordDto) {
         userService.changePassword(userPasswordDto);
-        return ResponseEntity.ok("Successfully changed password");
-    }
-
-    @PostMapping("/delete")
-    public ResponseEntity<String> delete(@Valid @RequestBody StringDto passwordDto) {
-        userService.delete(passwordDto.string());
-        return ResponseEntity.ok("Successfully deleted user");
-    }
-
-    @GetMapping("/name")
-    public ResponseEntity<String> getUsername() {
-        Optional<String> userDetails = userService.getUsername();
-        if (userDetails.isPresent()) {
-            return ResponseEntity.ok(userDetails.get());
-        }
         return ResponseEntity.noContent().build();
+    }
+
+    // Requires the password again, so a stolen session alone can't delete the account
+    @DeleteMapping
+    public ResponseEntity<Void> delete(@Valid @RequestBody PasswordDto passwordDto) {
+        userService.delete(passwordDto.password());
+        return ResponseEntity.noContent()
+            .header(HttpHeaders.SET_COOKIE, AuthCookies.expired().toString())
+            .build();
     }
 }

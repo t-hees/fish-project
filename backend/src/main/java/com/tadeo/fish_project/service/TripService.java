@@ -42,7 +42,7 @@ public class TripService {
     private final UserService userService;
     private final FishService fishSerice;
 
-    public Trip createTrip(TripDto tripDto) {
+    public TripReturnDto createTrip(TripDto tripDto) {
         User user = userService.getUser();
         Trip trip = Trip.builder()
             .location(tripDto.location())
@@ -58,8 +58,7 @@ public class TripService {
             .user(user)
             .build();
 
-        tripRepository.save(trip);
-        return trip;
+        return toReturnDto(tripRepository.save(trip));
     }
 
     public void deleteTrip(Long id) {
@@ -68,9 +67,9 @@ public class TripService {
         tripRepository.delete(trip);
     }
 
-    public void editCatches(EditCatchesDto editCatchesDto) {
-        Trip trip = tripRepository.findByIdAndUser(editCatchesDto.tripId(), userService.getUser())
-            .orElseThrow(() -> new TripNotFoundException(editCatchesDto.tripId()));
+    public void editCatches(Long tripId, EditCatchesDto editCatchesDto) {
+        Trip trip = tripRepository.findByIdAndUser(tripId, userService.getUser())
+            .orElseThrow(() -> new TripNotFoundException(tripId));
 
         Set<SimpleCatch> simpleCatches = editCatchesDto.simpleCatches().stream().map((dto) -> {
             Fish fish = fishSerice.findById(dto.fishId())
@@ -147,18 +146,22 @@ public class TripService {
             (location != null && !location.isBlank()) ? location : null,
             environment, fromDateTime, toDateTime, PageRequest.of(page, size));
         List<TripReturnDto> trips = tripPage.getContent().stream()
-            .map(trip -> new TripReturnDto(
-                trip.getId(),
-                trip.getLocation(),
-                trip.getEnvironment(),
-                trip.getTime(),
-                (trip.getDuration() != null) ? trip.getDuration().toHours() : null,
-                trip.getTemperature(),
-                trip.getWaterLevel(),
-                Set.copyOf(trip.getWeather()),
-                trip.getNotes()
-            ))
+            .map(TripService::toReturnDto)
             .collect(Collectors.toList());
         return new TripPageDto(trips, tripPage.hasNext(), tripPage.getTotalElements());
+    }
+
+    private static TripReturnDto toReturnDto(Trip trip) {
+        return new TripReturnDto(
+            trip.getId(),
+            trip.getLocation(),
+            trip.getEnvironment(),
+            trip.getTime(),
+            (trip.getDuration() != null) ? trip.getDuration().toHours() : null,
+            trip.getTemperature(),
+            trip.getWaterLevel(),
+            Set.copyOf(trip.getWeather()),
+            trip.getNotes()
+        );
     }
 }

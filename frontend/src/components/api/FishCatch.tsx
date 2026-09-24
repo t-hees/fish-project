@@ -32,7 +32,6 @@ export type SpecialCatchWithIdDto = {
 }
 
 export type EditCatchesDto = {
-  tripId: number,
   simpleCatches: SimpleCatchDto[],
   newSpecialCatches: SpecialCatchDto[],
   removableSpecialCatchIds: number[],

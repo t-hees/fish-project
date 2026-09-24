@@ -8,11 +8,11 @@ import type { SimpleFish } from './api/FishCatch';
 const aalmutter: SimpleFish = { id: 1, scientificName: "Zoarces viviparus", commonName: "Aalmutter" };
 
 function renderAutocomplete() {
-  const fetchMock = mockFetch({ "fish/search_by_common_name": () => jsonResponse([aalmutter]) });
+  const fetchMock = mockFetch({ "fish?name=": () => jsonResponse([aalmutter]) });
   const onSelect = vi.fn();
   render(
     <ItemAutocomplete<SimpleFish>
-      url="fish/search_by_common_name?name="
+      url="fish?name="
       onSelect={onSelect}
       displayFunc={(fish) => `${fish.commonName} (${fish.scientificName})`}
       setError={vi.fn()}
@@ -28,7 +28,15 @@ describe("ItemAutocomplete", () => {
 
     expect(await screen.findByText("Aalmutter (Zoarces viviparus)")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toMatch(/fish\/search_by_common_name\?name=aal$/);
+    expect(fetchMock.mock.calls[0][0]).toMatch(/fish\?name=aal$/);
+  });
+
+  it("encodes the query", async () => {
+    const { fetchMock, input } = renderAutocomplete();
+    await userEvent.type(input, "a&b");
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0][0]).toMatch(/fish\?name=a%26b$/);
   });
 
   it("selects an item and resets the search", async () => {

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -18,11 +19,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.tadeo.fish_project.dto.AllCatchesDto;
 import com.tadeo.fish_project.dto.EditCatchesDto;
-import com.tadeo.fish_project.dto.IdDto;
 import com.tadeo.fish_project.dto.SimpleCatchDto;
 import com.tadeo.fish_project.dto.SpecialCatchDto;
 import com.tadeo.fish_project.dto.SpecialCatchWithIdDto;
@@ -60,9 +61,13 @@ class TripIT {
         "notes");
 
     private TripPageDto getTripPage(String queryString) {
-        return testUserAuth.exchangeRestWithAuth("/api/trip/all?" + queryString, HttpMethod.GET,
+        return testUserAuth.exchangeRestWithAuth("/api/trips?" + queryString, HttpMethod.GET,
             new ParameterizedTypeReference<TripPageDto>() {}, null,
             HttpStatus.OK, "Failed to get trips");
+    }
+
+    private static String catchesUrl(Long tripId) {
+        return "/api/trips/" + tripId + "/catches";
     }
 
     private List<TripReturnDto> getAllTrips() {
@@ -73,9 +78,9 @@ class TripIT {
         return getTripPage("page=0&size=50&" + queryString).trips();
     }
 
-    private void createTrip(TripDto dto) {
-        testUserAuth.exchangeRestWithAuth("/api/trip/create", HttpMethod.POST,
-            new ParameterizedTypeReference<String>() {}, dto, HttpStatus.CREATED, "Failed to create trip");
+    private TripReturnDto createTrip(TripDto dto) {
+        return testUserAuth.exchangeRestWithAuth("/api/trips", HttpMethod.POST,
+            new ParameterizedTypeReference<TripReturnDto>() {}, dto, HttpStatus.CREATED, "Failed to create trip");
     }
 
     private TripDto tripAt(String location, LocalDateTime time) {
@@ -88,26 +93,26 @@ class TripIT {
         return trips.getFirst().id();
     }
 
-    private void editCatches(EditCatchesDto dto) {
-        testUserAuth.exchangeRestWithAuth("/api/trip/edit-catches", HttpMethod.POST,
-            new ParameterizedTypeReference<String>() {}, dto, HttpStatus.OK, "Failed editing catches of trip");
+    private AllCatchesDto editCatches(Long tripId, EditCatchesDto dto) {
+        return testUserAuth.exchangeRestWithAuth(catchesUrl(tripId), HttpMethod.PUT,
+            new ParameterizedTypeReference<AllCatchesDto>() {}, dto, HttpStatus.OK, "Failed editing catches of trip");
     }
 
     private AllCatchesDto getCatches(Long tripId) {
-        return testUserAuth.exchangeRestWithAuth("/api/trip/get-catches", HttpMethod.POST,
-            new ParameterizedTypeReference<AllCatchesDto>() {}, new IdDto(tripId),
+        return testUserAuth.exchangeRestWithAuth(catchesUrl(tripId), HttpMethod.GET,
+            new ParameterizedTypeReference<AllCatchesDto>() {}, null,
             HttpStatus.OK, "Failed to get all catches");
     }
 
-    private ApiError expectEntityNotFound(String username, String url, Object data) {
-        ApiError error = testUserAuth.exchangeErrorAs(username, url, HttpMethod.POST, data,
+    private ApiError expectEntityNotFound(String username, String url, HttpMethod method, Object data) {
+        ApiError error = testUserAuth.exchangeErrorAs(username, url, method, data,
             HttpStatus.NOT_FOUND, "Expected request to be rejected");
         assertEquals("ENTITY_NOT_FOUND", error.code());
         return error;
     }
 
-    private void expectValidationFail(String url, Object data) {
-        ApiError error = testUserAuth.exchangeErrorAs(TestUserAuth.username, url, HttpMethod.POST, data,
+    private void expectValidationFail(String url, HttpMethod method, Object data) {
+        ApiError error = testUserAuth.exchangeErrorAs(TestUserAuth.username, url, method, data,
             HttpStatus.BAD_REQUEST, "Expected invalid request to be rejected");
         assertEquals("VALIDATION_FAILED", error.code());
     }
@@ -130,20 +135,43 @@ class TripIT {
     }
 
     @Test
+    void testCreateTripReturnsCreatedTrip() {
+        ResponseEntity<TripReturnDto> response = testUtils.exchange("/api/trips", HttpMethod.POST,
+            new ParameterizedTypeReference<TripReturnDto>() {}, tripAt("created", LocalDateTime.of(2026, 2, 2, 2, 0)),
+            testUserAuth.authHeadersFor(TestUserAuth.username));
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        TripReturnDto created = response.getBody();
+        assertEquals("created", created.location());
+        assertEquals(URI.create("/api/trips/" + created.id()), response.getHeaders().getLocation());
+    }
+
+    @Test
     void testCreateInvalidTrip() {
-        expectValidationFail("/api/trip/create", new TripDto(" ", null, LocalDateTime.of(2026, 1, 1, 0, 0),
+        expectValidationFail("/api/trips", HttpMethod.POST, new TripDto(" ", null, LocalDateTime.of(2026, 1, 1, 0, 0),
             null, null, null, null, null));
-        expectValidationFail("/api/trip/create", new TripDto("no time", null, null,
+        expectValidationFail("/api/trips", HttpMethod.POST, new TripDto("no time", null, null,
             null, null, null, null, null));
-        expectValidationFail("/api/trip/create", new TripDto("negative hours", null, LocalDateTime.of(2026, 1, 1, 0, 0),
-            -1l, null, null, null, null));
+        expectValidationFail("/api/trips", HttpMethod.POST, new TripDto("negative hours", null,
+            LocalDateTime.of(2026, 1, 1, 0, 0), -1l, null, null, null, null));
         assertEquals(1, getAllTrips().size());
     }
 
     @Test
     void testEditCatchesWithInvalidAmount() {
-        expectValidationFail("/api/trip/edit-catches", new EditCatchesDto(firstTripId(),
+        expectValidationFail(catchesUrl(firstTripId()), HttpMethod.PUT, new EditCatchesDto(
             List.of(new SimpleCatchDto(someFishId, 0, Optional.empty())), List.of(), List.of()));
+    }
+
+    @Test
+    void testMalformedRequests() {
+        ApiError invalidId = testUserAuth.exchangeErrorAs(TestUserAuth.username, "/api/trips/abc", HttpMethod.DELETE,
+            null, HttpStatus.BAD_REQUEST, "Non-numeric trip id should be rejected");
+        assertEquals("MALFORMED_REQUEST", invalidId.code());
+
+        ApiError wrongMethod = testUserAuth.exchangeErrorAs(TestUserAuth.username, "/api/trips", HttpMethod.DELETE,
+            null, HttpStatus.METHOD_NOT_ALLOWED, "Deleting the trip collection should not be supported");
+        assertEquals("METHOD_NOT_ALLOWED", wrongMethod.code());
     }
 
     @Test
@@ -162,15 +190,14 @@ class TripIT {
 
     @Test
     void testDeleteTrip() {
-        testUserAuth.exchangeRestWithAuth("/api/trip/delete", HttpMethod.POST,
-            new ParameterizedTypeReference<String>() {}, new IdDto(firstTripId()),
-            HttpStatus.OK, "Deletion failed");
+        testUserAuth.exchangeNoContentWithAuth("/api/trips/" + firstTripId(), HttpMethod.DELETE, null,
+            "Deletion failed");
         assertTrue(getAllTrips().isEmpty(), "Unexpected result after deletion");
     }
 
     @Test
     void testDeleteNonexistentTrip() {
-        ApiError error = expectEntityNotFound(TestUserAuth.username, "/api/trip/delete", new IdDto(-1l));
+        ApiError error = expectEntityNotFound(TestUserAuth.username, "/api/trips/-1", HttpMethod.DELETE, null);
         assertTrue(error.message().contains("Trip"), "Unexpected error message: " + error.message());
     }
 
@@ -179,14 +206,14 @@ class TripIT {
         Long tripId = firstTripId();
         String other = TestUserAuth.otherUsername;
 
-        TripPageDto otherTrips = testUserAuth.exchangeRestAs(other, "/api/trip/all", HttpMethod.GET,
+        TripPageDto otherTrips = testUserAuth.exchangeRestAs(other, "/api/trips", HttpMethod.GET,
             new ParameterizedTypeReference<TripPageDto>() {}, null, HttpStatus.OK, "Failed to get trips");
         assertTrue(otherTrips.trips().isEmpty(), "Trips of other users must not be listed");
 
-        expectEntityNotFound(other, "/api/trip/get-catches", new IdDto(tripId));
-        expectEntityNotFound(other, "/api/trip/edit-catches",
-            new EditCatchesDto(tripId, List.of(new SimpleCatchDto(someFishId, 1, Optional.empty())), List.of(), List.of()));
-        expectEntityNotFound(other, "/api/trip/delete", new IdDto(tripId));
+        expectEntityNotFound(other, catchesUrl(tripId), HttpMethod.GET, null);
+        expectEntityNotFound(other, catchesUrl(tripId), HttpMethod.PUT,
+            new EditCatchesDto(List.of(new SimpleCatchDto(someFishId, 1, Optional.empty())), List.of(), List.of()));
+        expectEntityNotFound(other, "/api/trips/" + tripId, HttpMethod.DELETE, null);
 
         assertEquals(List.of(tripId), getAllTrips().stream().map(TripReturnDto::id).toList(),
             "Trip of the owner must still exist");
@@ -267,13 +294,14 @@ class TripIT {
         // Add catches
         SpecialCatchDto specialCatch = new SpecialCatchDto(someFishId, "data:image/png;base64,3859024=", 24l, 30l,
             "some notes", "ignored by backend");
-        editCatches(new EditCatchesDto(tripId,
+        AllCatchesDto editedCatches = editCatches(tripId, new EditCatchesDto(
             List.of(new SimpleCatchDto(someFishId, 4, Optional.of("ignored by backend"))),
             List.of(specialCatch),
             List.of()));
 
         // Get catches, names are resolved to the scientific name by the backend
         AllCatchesDto allCatches = getCatches(tripId);
+        assertEquals(allCatches, editedCatches, "Editing should return the resulting catches");
         assertEquals(
             List.of(new SimpleCatchDto(someFishId, 4, Optional.of(TestFishUtils.someFishScientificName))),
             allCatches.simpleCatches()
@@ -287,7 +315,7 @@ class TripIT {
         );
 
         // Delete catches
-        editCatches(new EditCatchesDto(tripId, List.of(), List.of(), List.of(savedSpecialCatch.catchId())));
+        editCatches(tripId, new EditCatchesDto(List.of(), List.of(), List.of(savedSpecialCatch.catchId())));
 
         AllCatchesDto newAllCatches = getCatches(tripId);
         assertAll(
@@ -301,9 +329,9 @@ class TripIT {
     void testEditCatchesReplacesSimpleCatches() {
         Long tripId = firstTripId();
 
-        editCatches(new EditCatchesDto(tripId,
+        editCatches(tripId, new EditCatchesDto(
             List.of(new SimpleCatchDto(someFishId, 4, Optional.empty())), List.of(), List.of()));
-        editCatches(new EditCatchesDto(tripId,
+        editCatches(tripId, new EditCatchesDto(
             List.of(new SimpleCatchDto(someFishId, 2, Optional.empty())), List.of(), List.of()));
 
         List<SimpleCatchDto> simpleCatches = getCatches(tripId).simpleCatches();
@@ -316,8 +344,8 @@ class TripIT {
         Long tripId = firstTripId();
         SpecialCatchDto withoutImage = new SpecialCatchDto(someFishId, null, null, null, null, null);
 
-        editCatches(new EditCatchesDto(tripId, List.of(), List.of(withoutImage), List.of()));
-        editCatches(new EditCatchesDto(tripId, List.of(), List.of(withoutImage), List.of()));
+        editCatches(tripId, new EditCatchesDto(List.of(), List.of(withoutImage), List.of()));
+        editCatches(tripId, new EditCatchesDto(List.of(), List.of(withoutImage), List.of()));
 
         List<SpecialCatchWithIdDto> specialCatches = getCatches(tripId).specialCatches();
         assertEquals(2, specialCatches.size(), "New special catches should be appended");
@@ -327,13 +355,13 @@ class TripIT {
     @Test
     void testEditCatchesWithUnknownFish() {
         Long tripId = firstTripId();
-        expectEntityNotFound(TestUserAuth.username, "/api/trip/edit-catches",
-            new EditCatchesDto(tripId, List.of(new SimpleCatchDto(-1l, 1, Optional.empty())), List.of(), List.of()));
+        expectEntityNotFound(TestUserAuth.username, catchesUrl(tripId), HttpMethod.PUT,
+            new EditCatchesDto(List.of(new SimpleCatchDto(-1l, 1, Optional.empty())), List.of(), List.of()));
         assertTrue(getCatches(tripId).simpleCatches().isEmpty());
     }
 
     @Test
     void testGetCatchesOfNonexistentTrip() {
-        expectEntityNotFound(TestUserAuth.username, "/api/trip/get-catches", new IdDto(-1l));
+        expectEntityNotFound(TestUserAuth.username, catchesUrl(-1l), HttpMethod.GET, null);
     }
 }

@@ -86,7 +86,7 @@ function Trip({ setError }: NotifiableContentContext) {
       {loading && <Loading />}
       <form onSubmit={(e) => {
         e.preventDefault();
-        fetchApi("trip/create", "POST", handleResponse, handleError, setLoading, trip)
+        fetchApi("trips", "POST", handleResponse, handleError, setLoading, trip)
       }}>
         {tripFromInput("Tag/Uhrzeit", "time", "datetime-local", true)}
         {tripFromInput("Ort", "location", "text", true)}

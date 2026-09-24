@@ -65,7 +65,7 @@ function TripContainer ({ setError, setNotification, searchParams }: NotifiableC
     if (loadingRef.current || !hasNextRef.current) return;
     loadingRef.current = true;
     setLoading(true);
-    fetchApi(`trip/all?${buildTripQuery(pageRef.current, TRIP_PAGE_SIZE, searchParams)}`, "GET",
+    fetchApi(`trips?${buildTripQuery(pageRef.current, TRIP_PAGE_SIZE, searchParams)}`, "GET",
       async (response) => {
         const tripPage: TripPageDto = await response.json();
         pageRef.current += 1;
@@ -111,11 +111,11 @@ function TripContainer ({ setError, setNotification, searchParams }: NotifiableC
   }
 
   const tripDelete = (tripId: number) => {
-    fetchApi("trip/delete", "POST", async (response) => {
+    fetchApi(`trips/${tripId}`, "DELETE", () => {
         setTripList((prev) => prev.filter((trip) => trip.id !== tripId));
-        setNotification(await response.text());
+        setNotification("Angelausflug gelöscht");
       },
-      setError, setLoading, {id: tripId})
+      setError, setLoading)
   }
 
   return (
@@ -181,12 +181,12 @@ function TripCatches({ tripId, setError }: {tripId: number, setError: React.Disp
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchApi("trip/get-catches", "POST", async (response) => {
+    fetchApi(`trips/${tripId}/catches`, "GET", async (response) => {
         const catches: AllCatchesDto = await response.json();
         setSimpleCatches(catches.simpleCatches);
         setSpecialCatches(catches.specialCatches);
       },
-      setError, setLoading, {id: tripId})
+      setError, setLoading)
   }, [setError, tripId]);
 
   if (loading) return <Loading />

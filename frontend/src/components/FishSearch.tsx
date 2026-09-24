@@ -16,7 +16,7 @@ export default function FishSearch() {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    const relPath = `fish/search_by_common_name?name=${debouncedQuery}`;
+    const relPath = `fish?name=${encodeURIComponent(debouncedQuery)}`;
     fetchApi(relPath, "GET", async (response) => setFishList(await response.json()),
       setError, setLoading)
   }, [debouncedQuery])

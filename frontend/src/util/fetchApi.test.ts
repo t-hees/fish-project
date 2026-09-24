@@ -11,7 +11,7 @@ function callFetchApi(response: Response | Promise<Response>, body?: Record<stri
     handleError: vi.fn(),
     handleLoading: vi.fn(),
   };
-  const done = fetchApi("trip/all", body ? "POST" : "GET", handlers.handleResponse, handlers.handleError,
+  const done = fetchApi("trips", body ? "POST" : "GET", handlers.handleResponse, handlers.handleError,
     handlers.handleLoading, body);
   return { fetchMock, done, ...handlers };
 }
@@ -21,7 +21,7 @@ describe("fetchApi", () => {
     const { fetchMock, done } = callFetchApi(jsonResponse({}), { id: 1 });
     await done;
 
-    expect(fetchMock).toHaveBeenCalledWith(apiPath + "trip/all", {
+    expect(fetchMock).toHaveBeenCalledWith(apiPath + "trips", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -41,7 +41,7 @@ describe("fetchApi", () => {
 
   it("reports api errors with code and message", async () => {
     const { done, handleResponse, handleError, handleLoading } = callFetchApi(jsonResponse(
-      { code: "ENTITY_NOT_FOUND", message: "Failed to find Trip: 1", timestamp: "", uri: "" }, 400));
+      { code: "ENTITY_NOT_FOUND", message: "Failed to find Trip: 1", timestamp: "", uri: "" }, 404));
     await done;
 
     expect(handleResponse).not.toHaveBeenCalled();
@@ -50,10 +50,10 @@ describe("fetchApi", () => {
   });
 
   it("reports errors without a json body by status", async () => {
-    const { done, handleError } = callFetchApi(new Response(null, { status: 403, statusText: "Forbidden" }));
+    const { done, handleError } = callFetchApi(new Response(null, { status: 401, statusText: "Unauthorized" }));
     await done;
 
-    expect(handleError).toHaveBeenCalledWith("403: Forbidden");
+    expect(handleError).toHaveBeenCalledWith("401: Unauthorized");
   });
 
   it("reports network failures", async () => {

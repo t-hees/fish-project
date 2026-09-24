@@ -9,7 +9,7 @@ export default function Navbar() {
   const {name, authClear} = useContext(AuthContext);
 
   const userLogout = () => {
-    fetchApi("user/logout", "POST",
+    fetchApi("auth/logout", "POST",
       () => {authClear(); navigate("/login")},
       (error) => console.error(error),
       () => {});

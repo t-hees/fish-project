@@ -14,11 +14,17 @@ const oldCatches: AllCatchesDto = {
   ],
 };
 
+// What the backend answers to the submit of "submits added and removed catches"
+const savedCatches: AllCatchesDto = {
+  simpleCatches: [{ fishId: 1, amount: 2, name: "Zoarces viviparus" }],
+  specialCatches: [],
+};
+
 function renderEditCatch() {
   const fetchMock = mockFetch({
-    "trip/get-catches": () => jsonResponse(oldCatches),
-    "fish/search_by_common_name": () => jsonResponse([aalmutter]),
-    "trip/edit-catches": () => new Response("Successfully edited catches of trip: 5"),
+    "GET trips/5/catches": () => jsonResponse(oldCatches),
+    "PUT trips/5/catches": () => jsonResponse(savedCatches),
+    "GET fish?name=": () => jsonResponse([aalmutter]),
   });
   render(
     <MemoryRouter initialEntries={["/edit-fish?id=5"]}>
@@ -43,7 +49,7 @@ describe("EditCatch", () => {
     const fetchMock = renderEditCatch();
 
     expect(await screen.findByText("Conger conger")).toBeInTheDocument();
-    expect(requestBodies(fetchMock, "trip/get-catches")).toEqual([{ id: 5 }]);
+    expect(requestBodies(fetchMock, "trips/5/catches", "GET")).toHaveLength(1);
   });
 
   it("adds simple catches once and changes their amount", async () => {
@@ -73,15 +79,15 @@ describe("EditCatch", () => {
 
     await userEvent.click(screen.getByText("Absenden"));
 
-    expect(await screen.findByText("Successfully edited catches of trip: 5")).toBeInTheDocument();
-    expect(requestBodies(fetchMock, "trip/edit-catches")).toEqual([{
-      tripId: 5,
+    expect(await screen.findByText("Fänge gespeichert")).toBeInTheDocument();
+    expect(requestBodies(fetchMock, "trips/5/catches", "PUT")).toEqual([{
       simpleCatches: [{ name: "Aalmutter", fishId: 1, amount: 2 }],
       newSpecialCatches: [],
       removableSpecialCatchIds: [7],
     }]);
-    // The saved state is reloaded, so submitted new catches aren't sent again by the next submit
-    expect(requestBodies(fetchMock, "trip/get-catches")).toHaveLength(2);
+    // Shows the saved catches from the response, so submitted new catches aren't sent again by the next submit
+    expect(screen.getByText("Zoarces viviparus")).toBeInTheDocument();
+    expect(requestBodies(fetchMock, "trips/5/catches", "GET")).toHaveLength(1);
   });
 
   it("adds several detailed catches of the same fish", async () => {
@@ -98,8 +104,8 @@ describe("EditCatch", () => {
 
     await userEvent.click(screen.getByText("Absenden"));
 
-    await screen.findByText("Successfully edited catches of trip: 5");
-    const [body] = requestBodies(fetchMock, "trip/edit-catches") as { newSpecialCatches: { fishId: number, size: number }[] }[];
+    await screen.findByText("Fänge gespeichert");
+    const [body] = requestBodies(fetchMock, "trips/5/catches", "PUT") as { newSpecialCatches: { fishId: number, size: number }[] }[];
     expect(body.newSpecialCatches.map(({ fishId, size }) => ({ fishId, size }))).toEqual([
       { fishId: 1, size: 30 },
       { fishId: 1, size: 45 },

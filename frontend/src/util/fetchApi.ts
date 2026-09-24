@@ -1,4 +1,4 @@
-type FetchMethod = "GET" | "POST";
+type FetchMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 type JsonBody = Record<string, unknown>;
 

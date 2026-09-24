@@ -53,7 +53,7 @@ class FishIT {
 
     private List<String> searchCommonNames(String name) {
         List<FishNameMappingDto> fishList = testUtils.exchangeRest(
-            "/api/fish/search_by_common_name?name=" + name, HttpMethod.GET,
+            "/api/fish?name=" + name, HttpMethod.GET,
             new ParameterizedTypeReference<List<FishNameMappingDto>>() {},
             HttpStatus.OK, "Failed to search fish by name"
         );

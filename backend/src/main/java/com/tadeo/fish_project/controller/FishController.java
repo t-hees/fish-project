@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class FishController {
     private final FishService fishService;
 
-    @GetMapping("/search_by_common_name")
+    @GetMapping
     public ResponseEntity<List<FishNameMappingDto>> searchByCommonName(@RequestParam String name) {
         return ResponseEntity.ok(fishService.searchByCommonName(name));
     }

@@ -31,28 +31,25 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
 
   const deleteAccount: VerificationAction = (oldPassword: string) => {
     setLoading(true);
-    const relPath = "user/delete";
     const jsonBody = {
-      string: oldPassword,
+      password: oldPassword,
     };
-    fetchApi(relPath, "POST", handleAccountDeletionResponse, setError, setLoading, jsonBody);
+    fetchApi("users/me", "DELETE", handleAccountDeletionResponse, setError, setLoading, jsonBody);
   }
 
   const changePassword: VerificationAction = (oldPassword: string) => {
     setLoading(true);
-    const relPath = "user/change-password";
     const jsonBody = {
       oldPassword: oldPassword,
       newPassword: newPassword,
     };
-    fetchApi(relPath, "POST", handleResponse, setError, setLoading, jsonBody);
+    fetchApi("users/me/password", "PUT", handleResponse, setError, setLoading, jsonBody);
   }
 
-  const handleResponse = async (response: Response) => {
-    const message = await response.text();
+  const handleResponse = async () => {
     setLoading(false);
     setError(null);
-    setNotification(message);
+    setNotification("Passwort geändert");
   }
 
   const handleAccountDeletionResponse = async () => {

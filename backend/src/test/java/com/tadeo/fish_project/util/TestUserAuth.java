@@ -68,6 +68,10 @@ public class TestUserAuth {
         return exchangeRestAs(username, url, method, typeReference, data, expectedStatus, errorMessage);
     }
 
+    public void exchangeNoContentWithAuth(String url, HttpMethod method, Object data, String errorMessage) {
+        testUtils.exchangeNoContent(url, method, data, authHeadersFor(username), errorMessage);
+    }
+
     public ApiError exchangeErrorAs(String name, String url, HttpMethod method, Object data,
             HttpStatus expectedStatus, String errorMessage) {
         return testUtils.exchangeError(url, method, data, authHeadersFor(name), expectedStatus, errorMessage);

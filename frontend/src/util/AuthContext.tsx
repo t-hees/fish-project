@@ -1,5 +1,9 @@
 import { createContext } from "react";
 
+export type UserInfo = {
+  username: string,
+}
+
 export type AuthType = {
   name: string|null,
   isAuthenticated: () => boolean,
