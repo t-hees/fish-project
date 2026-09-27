@@ -1,16 +1,18 @@
-import { useContext, useState, type FormEventHandler } from "react";
+import { useState, type FormEventHandler } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchApi } from "../util/fetchApi";
 import { Loading } from "./Loading";
 import type { NotifiableContentContext } from "./NotifiableContainer";
-import { AuthContext, type UserInfo } from "../util/AuthContext";
+import { useAuth, type UserInfo } from "../util/AuthContext";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export const Login = ({ setError }: NotifiableContentContext) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const authContext = useContext(AuthContext);
+  const authContext = useAuth();
+  const { t } = useTranslation();
 
   const requestLogin: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
@@ -31,10 +33,10 @@ export const Login = ({ setError }: NotifiableContentContext) => {
 
   return (
     <div>
-      <h2>Login</h2>
+      <h2>{t.loginPage.loginTitle}</h2>
       <form onSubmit={requestLogin}>
         <div>
-          <label className="form-label">Benutzername:</label>
+          <label className="form-label">{t.common.username}</label>
           <input
             type="text"
             value={username}
@@ -43,7 +45,7 @@ export const Login = ({ setError }: NotifiableContentContext) => {
           />
         </div>
         <div>
-          <label className="form-label">Passwort:</label>
+          <label className="form-label">{t.common.password}</label>
           <input
             type="password"
             value={password}
@@ -52,7 +54,7 @@ export const Login = ({ setError }: NotifiableContentContext) => {
           />
         </div>
         {loading && <Loading />}
-        <button className="form-submit-button" type="submit">Senden</button>
+        <button className="form-submit-button" type="submit">{t.common.send}</button>
       </form>
     </div>
   );

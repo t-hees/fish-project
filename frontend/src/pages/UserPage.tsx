@@ -1,15 +1,22 @@
-import { useContext, useState } from "react"
+import { useState } from "react"
 import { fetchApi } from "../util/fetchApi";
-import { AuthContext } from "../util/AuthContext";
+import { useAuth } from "../util/AuthContext";
 import { Loading } from "../components/Loading";
 import { useNavigate } from "react-router-dom";
 import { NotifiableContainer } from "../components/NotifiableContainer";
 import type { NotifiableContentContext } from "../components/NotifiableContainer";
+import { useTranslation } from "../i18n/LanguageContext";
 
 type VerificationAction = (oldPassword: string) => void;
 
 type VerificationContext = {
   message: string,
+  action: VerificationAction,
+};
+
+// Kept as a key instead of the text, so the message follows a language change
+type PendingVerification = {
+  messageKey: "confirmChangePassword" | "confirmDeleteAccount",
   action: VerificationAction,
 };
 
@@ -21,13 +28,11 @@ export default function UserPage() {
 
 const User = ({ setNotification, setError }: NotifiableContentContext) => {
   const navigate = useNavigate();
-  const { authClear } = useContext(AuthContext);
+  const { authClear } = useAuth();
   const [newPassword, setNewPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [verificationContext, setVerificationContext] = useState<VerificationContext | null>(null);
-
-  const changePasswordMessage = "Bestätige das alte Password zum Ändern";
-  const deleteUserMessage = "Bestätige das Password um den Nutzer unwiderrufbar zu löschen";
+  const [verificationContext, setVerificationContext] = useState<PendingVerification | null>(null);
+  const { t } = useTranslation();
 
   const deleteAccount: VerificationAction = (oldPassword: string) => {
     setLoading(true);
@@ -49,7 +54,7 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
   const handleResponse = async () => {
     setLoading(false);
     setError(null);
-    setNotification("Passwort geändert");
+    setNotification(t.userPage.passwordChanged);
   }
 
   const handleAccountDeletionResponse = async () => {
@@ -65,19 +70,20 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
 
   return (
     <>
-      <h2>Nutzerdaten Ändern</h2>
+      <h2>{t.userPage.title}</h2>
       {loading
         ? <Loading />
         : (
           verificationContext
-            ? <UserActionVerification message={verificationContext.message} action={verify(verificationContext.action)} />
+            ? <UserActionVerification message={t.userPage[verificationContext.messageKey]}
+                action={verify(verificationContext.action)} />
             : (
               <>
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  setVerificationContext({message: changePasswordMessage, action: changePassword})
+                  setVerificationContext({messageKey: "confirmChangePassword", action: changePassword})
                 }}>
-                  <label className="form-label">Neues password:</label>
+                  <label className="form-label">{t.userPage.newPassword}</label>
                   <div>
                     <input
                       type="password"
@@ -86,13 +92,13 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
                       required
                     />
                   </div>
-                  <button className="form-submit-button" type="submit">Password ändern</button>
+                  <button className="form-submit-button" type="submit">{t.userPage.changePassword}</button>
                 </form>
                 <div>
-                  <label className="form-label">Account löschen:</label>
+                  <label className="form-label">{t.userPage.deleteAccountLabel}</label>
                   <button type="button"
-                    onClick={() => setVerificationContext({message: deleteUserMessage, action: deleteAccount})}>
-                    Account löschen
+                    onClick={() => setVerificationContext({messageKey: "confirmDeleteAccount", action: deleteAccount})}>
+                    {t.userPage.deleteAccount}
                   </button>
                 </div>
               </>
@@ -105,6 +111,7 @@ const User = ({ setNotification, setError }: NotifiableContentContext) => {
 
 function UserActionVerification(verificationContext: VerificationContext) {
   const [oldPassword, setOldPassword] = useState<string>("");
+  const { t } = useTranslation();
 
   return (
     <form onSubmit={(e) => {
@@ -120,7 +127,7 @@ function UserActionVerification(verificationContext: VerificationContext) {
             required
           />
         </div>
-        <button className="form-submit-button" type="submit">Senden</button>
+        <button className="form-submit-button" type="submit">{t.common.send}</button>
       </form>
   )
 }

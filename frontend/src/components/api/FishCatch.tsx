@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { useTranslation } from "../../i18n/LanguageContext";
 
 export type SimpleFish = {
   id: number,
@@ -56,6 +57,7 @@ export type SpecialCatchListType = {
   action?: (fish: SpecialCatchWithIdDto) => JSX.Element
 };
 export function SpecialCatchList({ specialCatches, action }: SpecialCatchListType) {
+  const { t } = useTranslation();
   return(
     <div className="entry-list">
       {specialCatches.map((fish) => {
@@ -63,12 +65,12 @@ export function SpecialCatchList({ specialCatches, action }: SpecialCatchListTyp
                  <h3>{fish.name}</h3>
                  {fish.imageUrl &&
                    <a href={fish.imageUrl} target="_blank" rel="noreferrer">
-                     <img src={fish.imageUrl} alt={`Foto ${fish.name}`} loading="lazy"/>
+                     <img src={fish.imageUrl} alt={t.catches.photoOf(fish.name)} loading="lazy"/>
                    </a>
                  }
-                 <p>Größe: {fish.size}</p>
-                 <p>Gewicht: {fish.weight}</p>
-                 <p>Notizen: {fish.notes}</p>
+                 <p>{t.catches.size}: {fish.size}</p>
+                 <p>{t.catches.weight}: {fish.weight}</p>
+                 <p>{t.catches.notes}: {fish.notes}</p>
                  {action && action(fish)}
                </div>
       })}

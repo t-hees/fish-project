@@ -8,6 +8,7 @@ import "./Home.css";
 import { environmentList, type TripDto } from "../components/api/Trip";
 import { buildTripQuery, EMPTY_SEARCH_PARAMS, type TripSearchParams } from "../util/tripQuery";
 import { SimpleCatchList, SpecialCatchList, type AllCatchesDto, type SimpleCatchDto, type SpecialCatchWithIdDto } from "../components/api/FishCatch";
+import { useTranslation } from "../i18n/LanguageContext";
 
 type Trip = TripDto & {
   id: number,
@@ -60,6 +61,7 @@ function TripContainer ({ setError, setNotification, searchParams }: NotifiableC
   // rerender replaced its closure, which would otherwise load (and append) the same page again
   const pageRef = useRef<number>(0);
   const hasNextRef = useRef<boolean>(true);
+  const { t } = useTranslation();
 
   const loadNextPage = useCallback(() => {
     if (loadingRef.current || !hasNextRef.current) return;
@@ -113,7 +115,7 @@ function TripContainer ({ setError, setNotification, searchParams }: NotifiableC
   const tripDelete = (tripId: number) => {
     fetchApi(`trips/${tripId}`, "DELETE", () => {
         setTripList((prev) => prev.filter((trip) => trip.id !== tripId));
-        setNotification("Angelausflug gelöscht");
+        setNotification(t.trip.tripDeleted);
       },
       setError, setLoading)
   }
@@ -122,7 +124,7 @@ function TripContainer ({ setError, setNotification, searchParams }: NotifiableC
     <div className="scroll-container">
       {loading && <Loading />}
       <button type="button" onClick={() => navigate("/create-trip")}>
-        Neuer Angelausflug
+        {t.trip.newTrip}
       </button>
       {tripList.map((trip) => {
         const isExpanded = expandedTrips.has(trip.id);
@@ -143,26 +145,26 @@ function TripContainer ({ setError, setNotification, searchParams }: NotifiableC
             <div className={`trip-card-body ${isExpanded ? "expanded" : ""}`}>
               <div className="trip-card-body-inner">
                 <div className="trip-details">
-                  <div className="trip-detail"><span className="label">Uhrzeit</span><span>{trip.time.toString().split("T")[1]}</span></div>
-                  <div className="trip-detail"><span className="label">Gewässerart</span><span>{trip.environment}</span></div>
-                  <div className="trip-detail"><span className="label">Dauer</span><span>{trip.hours ? trip.hours + " Stunden" : "-"}</span></div>
-                  <div className="trip-detail"><span className="label">Temperatur</span><span>{trip.temperature}</span></div>
-                  <div className="trip-detail"><span className="label">Wasserpegel</span><span>{trip.waterLevel}</span></div>
-                  <div className="trip-detail"><span className="label">Wetter</span><span>{trip.weather && trip.weather.length > 0 ? trip.weather.join(", ") : "-"}</span></div>
+                  <div className="trip-detail"><span className="label">{t.trip.time}</span><span>{trip.time.toString().split("T")[1]}</span></div>
+                  <div className="trip-detail"><span className="label">{t.trip.environment}</span><span>{trip.environment}</span></div>
+                  <div className="trip-detail"><span className="label">{t.trip.duration}</span><span>{trip.hours ? t.trip.hours(trip.hours) : "-"}</span></div>
+                  <div className="trip-detail"><span className="label">{t.trip.temperature}</span><span>{trip.temperature}</span></div>
+                  <div className="trip-detail"><span className="label">{t.trip.waterLevel}</span><span>{trip.waterLevel}</span></div>
+                  <div className="trip-detail"><span className="label">{t.trip.weather}</span><span>{trip.weather && trip.weather.length > 0 ? trip.weather.join(", ") : "-"}</span></div>
                 </div>
                 {trip.notes && (
                   <div className="trip-notes">
-                    <span className="label">Notizen</span>
+                    <span className="label">{t.trip.notes}</span>
                     <p>{trip.notes}</p>
                   </div>
                 )}
                 {isExpanded && <TripCatches tripId={trip.id} setError={setError}/>}
                 <div className="trip-card-actions">
                   <button type="button" onClick={() => navigate(`/edit-fish?id=${trip.id}`)}>
-                    Fischliste bearbeiten
+                    {t.trip.editCatches}
                   </button>
                   <button type="button" className="danger" onClick={() => tripDelete(trip.id)}>
-                    Eintrag löschen
+                    {t.trip.deleteTrip}
                   </button>
                 </div>
               </div>
@@ -179,6 +181,7 @@ function TripCatches({ tripId, setError }: {tripId: number, setError: React.Disp
   const [simpleCatches, setSimpleCatches] = useState<SimpleCatchDto[]>([]);
   const [specialCatches, setSpecialCatches] = useState<SpecialCatchWithIdDto[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchApi(`trips/${tripId}/catches`, "GET", async (response) => {
@@ -195,9 +198,9 @@ function TripCatches({ tripId, setError }: {tripId: number, setError: React.Disp
 
   return (
     <div className="trip-catches">
-      <span className="label section-title">Fänge</span>
+      <span className="label section-title">{t.trip.catches}</span>
       {isEmpty
-        ? <p className="empty-state">Noch keine Fänge erfasst.</p>
+        ? <p className="empty-state">{t.trip.noCatches}</p>
         : <>
             {simpleCatches.length > 0 && <SimpleCatchList simpleCatches={simpleCatches} />}
             {specialCatches.length > 0 && <SpecialCatchList specialCatches={specialCatches} />}
@@ -210,6 +213,7 @@ function TripCatches({ tripId, setError }: {tripId: number, setError: React.Disp
 function TripSearchBar({ onSearch }: { onSearch: (searchParams: TripSearchParams) => void }) {
   const [rawParams, setRawParams] = useState<TripSearchParams>(EMPTY_SEARCH_PARAMS);
   const debouncedParams = useDebounce<TripSearchParams>(rawParams, SEARCH_DEBOUNCE_MS);
+  const { t } = useTranslation();
 
   useEffect(() => {
     onSearch(debouncedParams);
@@ -221,7 +225,7 @@ function TripSearchBar({ onSearch }: { onSearch: (searchParams: TripSearchParams
     <div className="trip-search-bar">
       <input
         type="text"
-        placeholder="Ort suchen..."
+        placeholder={t.trip.searchLocation}
         value={rawParams.location}
         onChange={(e) => setRawParams({ ...rawParams, location: e.target.value })}
         className="search-input"
@@ -230,18 +234,18 @@ function TripSearchBar({ onSearch }: { onSearch: (searchParams: TripSearchParams
         value={rawParams.environment}
         onChange={(e) => setRawParams({ ...rawParams, environment: e.target.value as TripSearchParams["environment"] })}
       >
-        <option value="">Alle Gewässer</option>
+        <option value="">{t.trip.allEnvironments}</option>
         {environmentList.map((environment) => (
           <option key={environment} value={environment}>{environment}</option>
         ))}
       </select>
-      <label className="form-label">Von</label>
+      <label className="form-label">{t.trip.from}</label>
       <input
         type="date"
         value={rawParams.from}
         onChange={(e) => setRawParams({ ...rawParams, from: e.target.value })}
       />
-      <label className="form-label">Bis</label>
+      <label className="form-label">{t.trip.to}</label>
       <input
         type="date"
         value={rawParams.to}

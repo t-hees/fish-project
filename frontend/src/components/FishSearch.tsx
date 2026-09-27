@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { useDebounce } from "../util/useDebounce";
 import { Loading } from "./Loading";
 import { fetchApi } from "../util/fetchApi";
+import { useTranslation } from "../i18n/LanguageContext";
 
 type SimpleFish = {
   scientificName: string;
@@ -14,6 +15,7 @@ export default function FishSearch() {
   const debouncedQuery = useDebounce<string>(query, 500);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const relPath = `fish?name=${encodeURIComponent(debouncedQuery)}`;
@@ -34,7 +36,7 @@ export default function FishSearch() {
           type="text"
           value={query}
           onChange={handleInputChange}
-          placeholder="Suchbegriff eingeben..."
+          placeholder={t.common.searchPlaceholder}
           className="search-input"
         />
       </div>

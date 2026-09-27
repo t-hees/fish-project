@@ -4,6 +4,7 @@ import { fetchApi } from "../util/fetchApi";
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/Loading";
 import { environmentList, weatherList, type TripDto } from "../components/api/Trip";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export default function CreateTrip() {
   return (
@@ -15,6 +16,7 @@ function Trip({ setError }: NotifiableContentContext) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [trip, setTripDto] = useState<TripDto>({} as TripDto);
+  const { t } = useTranslation();
 
   const handleResponse = async () => {
     navigate("/");
@@ -82,22 +84,22 @@ function Trip({ setError }: NotifiableContentContext) {
 
   return (
     <>
-      <h2> Neuer Angelausflug </h2>
+      <h2> {t.trip.newTrip} </h2>
       {loading && <Loading />}
       <form onSubmit={(e) => {
         e.preventDefault();
         fetchApi("trips", "POST", handleResponse, handleError, setLoading, trip)
       }}>
-        {tripFromInput("Tag/Uhrzeit", "time", "datetime-local", true)}
-        {tripFromInput("Ort", "location", "text", true)}
-        {tripFormSelection("Gewässerart", "environment", environmentList)}
-        {tripFromInput("Dauer(in h)", "hours", "number")}
-        {tripFromInput("Temperatur", "temperature", "number")}
-        {tripFromInput("Wasserpegel", "waterLevel", "number")}
-        {tripFormSelection("Wetter", "weather", weatherList, true)}
-        {tripFromInput("Notizen", "notes", "text")}
+        {tripFromInput(t.trip.dateTime, "time", "datetime-local", true)}
+        {tripFromInput(t.trip.location, "location", "text", true)}
+        {tripFormSelection(t.trip.environment, "environment", environmentList)}
+        {tripFromInput(t.trip.durationInHours, "hours", "number")}
+        {tripFromInput(t.trip.temperature, "temperature", "number")}
+        {tripFromInput(t.trip.waterLevel, "waterLevel", "number")}
+        {tripFormSelection(t.trip.weather, "weather", weatherList, true)}
+        {tripFromInput(t.trip.notes, "notes", "text")}
         <div>
-          <button className="form-submit-button" type="submit">Angelausflug erstellen</button>
+          <button className="form-submit-button" type="submit">{t.trip.createTrip}</button>
         </div>
       </form>
     </>

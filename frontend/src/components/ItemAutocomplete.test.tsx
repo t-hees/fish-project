@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event';
 import ItemAutocomplete from './ItemAutocomplete';
 import { jsonResponse, mockFetch } from '../test/mockFetch';
 import type { SimpleFish } from './api/FishCatch';
+import { translations } from '../i18n/LanguageContext';
+
+const t = translations.de;
 
 const aalmutter: SimpleFish = { id: 1, scientificName: "Zoarces viviparus", commonName: "Aalmutter" };
 
@@ -18,7 +21,7 @@ function renderAutocomplete() {
       setError={vi.fn()}
     />
   );
-  return { fetchMock, onSelect, input: screen.getByPlaceholderText("Suchbegriff eingeben...") };
+  return { fetchMock, onSelect, input: screen.getByPlaceholderText(t.common.searchPlaceholder) };
 }
 
 describe("ItemAutocomplete", () => {

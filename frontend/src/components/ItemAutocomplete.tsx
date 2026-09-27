@@ -3,6 +3,7 @@ import { useDebounce } from "../util/useDebounce";
 import { Loading } from "./Loading";
 import { fetchApi } from "../util/fetchApi";
 import "./ItemAutocomplete.css";
+import { useTranslation } from "../i18n/LanguageContext";
 
 type ItemAutocompleteType<T> = {
   url: string,
@@ -15,6 +16,7 @@ export default function ItemAutocomplete<T>({ url, onSelect, displayFunc, setErr
   const [query, setQuery] = useState<string>("");
   const debouncedQuery = useDebounce<string>(query, 500);
   const [loading, setLoading] = useState<boolean>(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (debouncedQuery !== "") {
@@ -40,7 +42,7 @@ export default function ItemAutocomplete<T>({ url, onSelect, displayFunc, setErr
           type="text"
           value={query}
           onChange={handleInputChange}
-          placeholder="Suchbegriff eingeben..."
+          placeholder={t.common.searchPlaceholder}
           className="search-input"
         />
       </div>

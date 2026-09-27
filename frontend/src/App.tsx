@@ -6,12 +6,12 @@ import UserPage from './pages/UserPage.tsx'
 import Home from './pages/Home.tsx'
 import CreateTrip from './pages/CreateTrip.tsx'
 import EditCatch from './pages/EditCatch.tsx'
-import { useContext, useEffect } from 'react'
-import { AuthContext } from './util/AuthContext.tsx'
+import { useEffect } from 'react'
+import { useAuth } from './util/AuthContext.tsx'
 
 export default function App() {
 
-  const {isAuthenticated, fetchName} = useContext(AuthContext);
+  const {isAuthenticated, fetchName} = useAuth();
 
   useEffect(() => {
     fetchName();

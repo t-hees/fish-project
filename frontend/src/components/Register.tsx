@@ -1,19 +1,20 @@
-import { useState, type FormEventHandler } from "react";
+import { useState, type ChangeEventHandler } from "react";
+import { useTranslation } from "../i18n/LanguageContext";
 import { fetchApi } from "../util/fetchApi";
 import { Loading } from "./Loading";
 import type { NotifiableContentContext } from "./NotifiableContainer";
 
 export const Register = ({ setNotification, setError }: NotifiableContentContext) => {
-  const passwordNotMatchingError: string = "Error: Passwords don't match";
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [repeatPassword, setRepeatPassword] = useState<string>("");
 
-  const requestRegister: FormEventHandler<HTMLFormElement> = (e) => {
+  const requestRegister: ChangeEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
     if (password != repeatPassword) {
-      setError(passwordNotMatchingError);
+      setError(t.loginPage.passwordsDontMatch);
       return;
     }
     setLoading(true);
@@ -26,15 +27,15 @@ export const Register = ({ setNotification, setError }: NotifiableContentContext
   }
 
   const handleResponse = async () => {
-    setNotification("Registrierung erfolgreich! Versuche Login");
+    setNotification(t.loginPage.registerSuccess);
   }
 
   return (
     <div>
-      <h2>Registrieren</h2>
+      <h2>{t.loginPage.registerTitle}</h2>
       <form onSubmit={requestRegister}>
         <div>
-          <label className="form-label">Benutzername:</label>
+          <label className="form-label">{t.common.username}</label>
           <input
             type="text"
             value={username}
@@ -43,7 +44,7 @@ export const Register = ({ setNotification, setError }: NotifiableContentContext
           />
         </div>
         <div>
-          <label className="form-label">Passwort:</label>
+          <label className="form-label">{t.common.password}</label>
           <input
             type="password"
             value={password}
@@ -54,7 +55,7 @@ export const Register = ({ setNotification, setError }: NotifiableContentContext
           />
         </div>
         <div>
-          <label className="form-label">Wiederhole Passwort:</label>
+          <label className="form-label">{t.loginPage.repeatPassword}</label>
           <input
             type="password"
             value={repeatPassword}
@@ -63,7 +64,7 @@ export const Register = ({ setNotification, setError }: NotifiableContentContext
           />
         </div>
         {loading && <Loading />}
-        <button className="form-submit-button" type="submit">Senden</button>
+        <button className="form-submit-button" type="submit">{t.common.send}</button>
       </form>
     </div>
   );

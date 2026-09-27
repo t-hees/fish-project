@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import "./Navbar.css";
 import { fetchApi } from "../util/fetchApi";
-import { useContext } from "react";
-import { AuthContext } from "../util/AuthContext";
+import { useAuth } from "../util/AuthContext";
+import { languages, useTranslation } from "../i18n/LanguageContext";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const {name, authClear} = useContext(AuthContext);
+  const {name, authClear} = useAuth();
+  const {language, setLanguage, t} = useTranslation();
+  const nextLanguage = languages[(languages.indexOf(language) + 1) % languages.length];
 
   const userLogout = () => {
     fetchApi("auth/logout", "POST",
@@ -18,7 +20,7 @@ export default function Navbar() {
   return (
     <nav className="navigation">
       <button type="button" onClick={() => navigate("/")}>
-        HOME
+        {t.navbar.home}
       </button>
       {name
         ? <>
@@ -26,15 +28,18 @@ export default function Navbar() {
               {name}
             </button>
             <button type="button" onClick={userLogout}>
-              LOGOUT
+              {t.navbar.logout}
             </button>
           </>
         : <>
             <button type="button" onClick={() => navigate("/login")}>
-              LOGIN
+              {t.navbar.login}
             </button>
           </>
       }
+      <button type="button" title={t.navbar.switchLanguage} onClick={() => setLanguage(nextLanguage)}>
+        {nextLanguage.toUpperCase()}
+      </button>
     </nav>
   )
 }

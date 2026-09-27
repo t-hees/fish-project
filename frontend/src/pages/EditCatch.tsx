@@ -6,6 +6,7 @@ import { Loading } from "../components/Loading";
 import { fetchApi } from "../util/fetchApi";
 import type { SimpleFish, SimpleCatchDto, SpecialCatchDto, SpecialCatchWithIdDto, EditCatchesDto, AllCatchesDto, NewSpecialCatch } from "../components/api/FishCatch";
 import { MAX_IMAGE_BYTES, SpecialCatchList } from "../components/api/FishCatch";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export default function EditCatch() {
   return (
@@ -36,6 +37,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
   const [oldSpecialCatches, setOldSpecialCatches] = useState<SpecialCatchWithIdDto[]>([]);
   const [removableSpecialCatchIds, setRemovableSpecialCatchIds] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const { t } = useTranslation();
 
   const catchesPath = `trips/${tripId}/catches`;
 
@@ -52,7 +54,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
     fetchApi(catchesPath, "GET", showSavedCatches, setError, setLoading)
   }, [catchesPath, showSavedCatches, setError]);
 
-  if (!tripId) return (<h1>ERROR: No trip id parameter provided</h1>);
+  if (!tripId) return (<h1>{t.catches.noTripId}</h1>);
   if (loading) return <Loading />
 
 
@@ -73,7 +75,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
 
   const selectImage = (index: number, image: File | undefined) => {
     if (image && image.size > MAX_IMAGE_BYTES) {
-      setError(`Das Foto ist größer als ${MAX_IMAGE_BYTES / 1024 / 1024} MB`);
+      setError(t.catches.imageTooLarge(MAX_IMAGE_BYTES / 1024 / 1024));
       return;
     }
     updateSpecialCatches(index, (dto) => {
@@ -120,13 +122,13 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
 
     await fetchApi(catchesPath, "GET", showSavedCatches, handleError, setLoading);
     setSpecialCatches(unsavedCatches);
-    if (unsavedCatches.length === 0) setNotification("Fänge gespeichert");
+    if (unsavedCatches.length === 0) setNotification(t.catches.saved);
   }
 
   const deleteSpecialCatchButton = (fish: SpecialCatchWithIdDto) => {
     return (
       <button className="danger" onClick={() => setRemovableSpecialCatchIds([...removableSpecialCatchIds, fish.catchId])}>
-        Fisch löschen
+        {t.catches.deleteFish}
       </button>
     )
   }
@@ -134,7 +136,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
   return (
     <>
       <div>
-        <h2>Einfache Fischeinträge</h2>
+        <h2>{t.catches.simpleCatches}</h2>
         <ItemAutocomplete<SimpleFish>
           url="fish?name="
           onSelect={(fish: SimpleFish) => (!simpleCatches.some(scatch => scatch.fishId === fish.id))
@@ -166,7 +168,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
       </div>
 
       <div>
-        <h2>Detaillierte Fischeinträge</h2>
+        <h2>{t.catches.detailedCatches}</h2>
         <SpecialCatchList
           specialCatches={oldSpecialCatches.filter(fish => !removableSpecialCatchIds.includes(fish.catchId))}
           action={deleteSpecialCatchButton}
@@ -190,28 +192,28 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
             // New catches are only ever appended, so their position is a stable key
             <li className="entry-list-item" key={index}>
               <h3>{fish.name}</h3>
-              <label className="form-label">Foto</label>
+              <label className="form-label">{t.catches.photo}</label>
               {fish.previewUrl &&
-                <img src={fish.previewUrl} alt={`Foto ${fish.name}`}/>
+                <img src={fish.previewUrl} alt={t.catches.photoOf(fish.name)}/>
               }
               <input
                 type="file"
                 accept="image/jpeg,image/png"
                 onChange={(e) => selectImage(index, e.target.files?.[0])}
               />
-              <label className="form-label">Größe</label>
+              <label className="form-label">{t.catches.size}</label>
               <input
                 type="number"
                 value={fish.size ? fish.size : ""}
                 onChange={(e) => updateSpecialCatches(index, (dto) => {return {...dto, size:e.target.valueAsNumber}})}
               />
-              <label className="form-label">Gewicht</label>
+              <label className="form-label">{t.catches.weight}</label>
               <input
                 type="number"
                 value={fish.weight ? fish.weight : ""}
                 onChange={(e) => updateSpecialCatches(index, (dto) => {return {...dto, weight:e.target.valueAsNumber}})}
               />
-              <label className="form-label">Notizen</label>
+              <label className="form-label">{t.catches.notes}</label>
               <input
                 type="text"
                 value={fish.notes ? fish.notes : ""}
@@ -224,7 +226,7 @@ function Catch({ setError, setNotification }: NotifiableContentContext) {
       </div>
 
       <button className="form-submit-button" onClick={submitFish}>
-        Absenden
+        {t.catches.submit}
       </button>
     </>
   )

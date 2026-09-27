@@ -5,6 +5,9 @@ import { MemoryRouter } from 'react-router-dom';
 import EditCatch from './EditCatch';
 import { jsonResponse, mockFetch, requestBodies } from '../test/mockFetch';
 import { MAX_IMAGE_BYTES, type AllCatchesDto, type SimpleFish } from '../components/api/FishCatch';
+import { translations } from '../i18n/LanguageContext';
+
+const t = translations.de;
 
 const aalmutter: SimpleFish = { id: 1, scientificName: "Zoarces viviparus", commonName: "Aalmutter" };
 const oldCatches: AllCatchesDto = {
@@ -41,7 +44,7 @@ function renderEditCatch(createSpecialCatch = () => jsonResponse({}, 201)) {
 }
 
 async function addSimpleCatch(query = "aal") {
-  const [simpleSearch] = await screen.findAllByPlaceholderText("Suchbegriff eingeben...");
+  const [simpleSearch] = await screen.findAllByPlaceholderText(t.common.searchPlaceholder);
   await userEvent.type(simpleSearch, query);
   await userEvent.click(await screen.findByText("Aalmutter (Zoarces viviparus)"));
 }
@@ -49,7 +52,7 @@ async function addSimpleCatch(query = "aal") {
 // Queries differ, as repeating the same one within the debounce delay doesn't search again
 async function addSpecialCatches(queries: string[]) {
   for (const query of queries) {
-    const specialSearch = (await screen.findAllByPlaceholderText("Suchbegriff eingeben..."))[1];
+    const specialSearch = (await screen.findAllByPlaceholderText(t.common.searchPlaceholder))[1];
     await userEvent.type(specialSearch, query);
     await userEvent.click(await screen.findByText("Aalmutter (Zoarces viviparus)"));
   }
@@ -78,7 +81,7 @@ describe("EditCatch", () => {
     const fetchMock = renderEditCatch();
 
     expect(await screen.findByText("Conger conger")).toBeInTheDocument();
-    expect(screen.getByAltText("Foto Conger conger")).toHaveAttribute("src", oldCatches.specialCatches[0].imageUrl);
+    expect(screen.getByAltText(t.catches.photoOf("Conger conger"))).toHaveAttribute("src", oldCatches.specialCatches[0].imageUrl);
     expect(requestBodies(fetchMock, "trips/5/catches", "GET")).toHaveLength(1);
   });
 
@@ -103,12 +106,12 @@ describe("EditCatch", () => {
     const fetchMock = renderEditCatch();
     await addSimpleCatch();
     await userEvent.click(within(simpleCatchRow()).getByText("+"));
-    await userEvent.click(screen.getByText("Fisch löschen"));
+    await userEvent.click(screen.getByText(t.catches.deleteFish));
     expect(screen.queryByText("Conger conger")).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByText("Absenden"));
+    await userEvent.click(screen.getByText(t.catches.submit));
 
-    expect(await screen.findByText("Fänge gespeichert")).toBeInTheDocument();
+    expect(await screen.findByText(t.catches.saved)).toBeInTheDocument();
     expect(requestBodies(fetchMock, "trips/5/catches", "PUT")).toEqual([{
       simpleCatches: [{ name: "Aalmutter", fishId: 1, amount: 2 }],
       removableSpecialCatchIds: [7],
@@ -127,11 +130,11 @@ describe("EditCatch", () => {
     await userEvent.type(secondSize, "45");
     const photo = new File(["png data"], "photo.png", { type: "image/png" });
     await userEvent.upload(fileInputs()[0], photo);
-    expect(screen.getByAltText("Foto Aalmutter")).toHaveAttribute("src", "blob:preview");
+    expect(screen.getByAltText(t.catches.photoOf("Aalmutter"))).toHaveAttribute("src", "blob:preview");
 
-    await userEvent.click(screen.getByText("Absenden"));
+    await userEvent.click(screen.getByText(t.catches.submit));
 
-    expect(await screen.findByText("Fänge gespeichert")).toBeInTheDocument();
+    expect(await screen.findByText(t.catches.saved)).toBeInTheDocument();
     const [first, second] = requestBodies(fetchMock, "trips/5/special-catches", "POST") as FormData[];
     expect(await catchPart(first)).toEqual({ fishId: 1, size: 30, weight: null, notes: null });
     expect(first.get("image")).toBe(photo);
@@ -145,10 +148,10 @@ describe("EditCatch", () => {
     renderEditCatch(() => jsonResponse(uploadError, 415));
     await addSpecialCatches(["aal"]);
 
-    await userEvent.click(screen.getByText("Absenden"));
+    await userEvent.click(screen.getByText(t.catches.submit));
 
     expect(await screen.findByText(`UNSUPPORTED_IMAGE: ${uploadError.message}`)).toBeInTheDocument();
-    expect(screen.queryByText("Fänge gespeichert")).not.toBeInTheDocument();
+    expect(screen.queryByText(t.catches.saved)).not.toBeInTheDocument();
     expect(fileInputs()).toHaveLength(1);
     expect(screen.getByRole("heading", { name: "Aalmutter" })).toBeInTheDocument();
   });
@@ -160,7 +163,7 @@ describe("EditCatch", () => {
     const tooLarge = new File([new Uint8Array(MAX_IMAGE_BYTES + 1)], "huge.jpg", { type: "image/jpeg" });
     await userEvent.upload(fileInputs()[0], tooLarge);
 
-    expect(screen.getByText("Das Foto ist größer als 10 MB")).toBeInTheDocument();
-    expect(screen.queryByAltText("Foto Aalmutter")).not.toBeInTheDocument();
+    expect(screen.getByText(t.catches.imageTooLarge(10))).toBeInTheDocument();
+    expect(screen.queryByAltText(t.catches.photoOf("Aalmutter"))).not.toBeInTheDocument();
   });
 });

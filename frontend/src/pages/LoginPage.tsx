@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { Login } from "../components/Login.tsx";
 import { Register } from "../components/Register.tsx";
 import { NotifiableContainer, type NotifiableContentContext, type WrappedComponent } from "../components/NotifiableContainer.tsx";
+import { useTranslation } from "../i18n/LanguageContext.ts";
 
 export default function LoginPage() {
   const [noAccount, setNoAccount] = useState<boolean>(false);
@@ -21,7 +22,7 @@ export default function LoginPage() {
     <div className="main-flex-container">
       {children}
       <button type="button" onClick={() => setNoAccount(!noAccount)}>
-        {noAccount ? "Zu Login wechseln" : "Zu Registrieren wechseln"}
+        <SwitchFormText noAccount={noAccount} />
       </button>
     </div>
     );
@@ -30,4 +31,10 @@ export default function LoginPage() {
   return(
     <NotifiableContainer MainContent={LoginPageContent} ContentWrapper={OuterWrapper} />
   );
+}
+
+// Translated in its own component, so a language change doesn't recreate OuterWrapper and reset the forms
+function SwitchFormText({ noAccount }: { noAccount: boolean }) {
+  const { t } = useTranslation();
+  return noAccount ? t.loginPage.switchToLogin : t.loginPage.switchToRegister;
 }
