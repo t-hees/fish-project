@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -19,9 +19,27 @@ function renderWithLanguage() {
 }
 
 describe("LanguageProvider", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    vi.spyOn(window.navigator, 'languages', 'get').mockReturnValue(['en-US', 'de-DE']);
+    vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('en-US');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("defaults to english", () => {
+    renderWithLanguage();
+
+    expect(screen.getByText(translations.en.common.loading)).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("en");
+  });
 
   it("defaults to german", () => {
+    vi.spyOn(window.navigator, 'languages', 'get').mockReturnValue(['de-DE', 'en-US']);
+    vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('de-DE');
+
     renderWithLanguage();
 
     expect(screen.getByText(translations.de.common.loading)).toBeInTheDocument();
@@ -30,16 +48,16 @@ describe("LanguageProvider", () => {
 
   it("switches the language with the navbar button and remembers it", async () => {
     const { unmount } = renderWithLanguage();
-    await userEvent.click(screen.getByRole("button", { name: "EN" }));
+    await userEvent.click(screen.getByRole("button", { name: "DE" }));
 
-    expect(screen.getByText(translations.en.common.loading)).toBeInTheDocument();
-    expect(document.documentElement.lang).toBe("en");
+    expect(screen.getByText(translations.de.common.loading)).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("de");
 
     unmount();
     renderWithLanguage();
-    expect(screen.getByText(translations.en.common.loading)).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: "DE" }));
     expect(screen.getByText(translations.de.common.loading)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "EN" }));
+    expect(screen.getByText(translations.en.common.loading)).toBeInTheDocument();
   });
 });
